@@ -121,6 +121,22 @@ class RationaleItem(BaseModel):
         return self
 
 
+class ReviewTurn(BaseModel):
+    """A Skeptic's objection, settled by simulation (B2.5). The argument is model text and
+    is NEVER verified; the design never changes because of it — only the simulation's p90
+    decides the verdict."""
+
+    role: str = "skeptic"
+    argument: str
+    field: str
+    proposed_value: float
+    p90_before: float
+    p90_after: float
+    extra_tips: int = 0
+    extra_compound_uL: float = 0.0
+    verdict: str = Field(..., description="'supported' | 'not supported'.")
+
+
 class ExperimentDesign(BaseModel):
     design_id: str
     topic_id: str
@@ -138,6 +154,7 @@ class ExperimentDesign(BaseModel):
         default_factory=list,
         description="Design-level notes for the UI, e.g. 'top_nM capped at 100000 nM'.",
     )
+    review: list[ReviewTurn] = Field(default_factory=list, description="Skeptic turns (B2.5).")
 
     @model_validator(mode="after")
     def _warn_small_transfer(self) -> "ExperimentDesign":

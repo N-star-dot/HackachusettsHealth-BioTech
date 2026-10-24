@@ -27,6 +27,7 @@ from backend.contracts.experiment_design import (
     Plate,
     Volumes,
     RationaleItem,
+    ReviewTurn,
 )
 from backend.contracts.sim_result import (
     SimResult,
@@ -62,6 +63,7 @@ __all__ = [
     "Plate",
     "Volumes",
     "RationaleItem",
+    "ReviewTurn",
     "SimResult",
     "SimulatorInfo",
     "CostBreakdown",

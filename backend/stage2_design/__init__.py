@@ -8,6 +8,7 @@ from backend.stage2_design.demo_pairs import (
     load_evidence,
 )
 from backend.stage2_design.designer import design_experiment, design_from_pair
+from backend.stage2_design.skeptic import review_design
 
 __all__ = [
     "design_experiment",
@@ -18,4 +19,5 @@ __all__ = [
     "load_demo_pairs",
     "load_evidence",
     "evidence_abstracts_for",
+    "review_design",
 ]

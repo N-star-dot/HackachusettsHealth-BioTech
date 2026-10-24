@@ -16,7 +16,7 @@ from backend.contracts import (
     UncertaintyReport,
 )
 from backend.stage1_topic import recompute_axes, score_topic
-from backend.stage2_design import check_citations, design_experiment
+from backend.stage2_design import check_citations, design_experiment, review_design
 from backend.stage2_design.demo_pairs import (
     evidence_abstracts_for,
     get_demo_pair,
@@ -98,6 +98,15 @@ def run_pipeline(
     uncertainty.next_experiments = plan_next_experiments(design, uncertainty)
     if db:
         db.save_report(run_id, "uncertainty", uncertainty)
+
+    # --- B2.5: Skeptic debate, settled by simulation (empty without GEMINI_API_KEY) ---
+    review = review_design(
+        design, uncertainty.fold_error.p90, runs=runs, seed=seed, reader_cv=reader_cv
+    )
+    if review:
+        design = design.model_copy(update={"review": review})
+        if db:
+            db.save_report(run_id, "design", design)
 
     # --- B1.5: recompute the four fixed matrix axes now that stages 2-3 have run ---
     topic = recompute_axes(topic, design, sim)
