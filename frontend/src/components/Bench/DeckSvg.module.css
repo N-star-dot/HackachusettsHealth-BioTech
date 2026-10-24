@@ -1,0 +1,2 @@
+.svg { width: 100%; height: auto; display: block; border-radius: var(--radius-deck); }
+.slotLabel { font-size: 4px; fill: var(--graphite); font-stretch: 75%; }

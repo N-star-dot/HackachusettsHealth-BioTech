@@ -1,5 +1,9 @@
+import { useReducedMotion } from "motion/react";
 import { labwareName } from "../../lib/labware";
 import { Replay } from "./Replay";
+import { DeckSvg } from "./DeckSvg";
+import { initialState } from "../../lib/replay";
+import { isReplayable } from "../../api/normalize";
 import type { DeckSlot, ExperimentDesign, SimResult } from "../../api/types";
 import styles from "./Deck.module.css";
 
@@ -16,45 +20,35 @@ const FIXED: DeckSlot[] = [
   { slot: "D3", load_name: "nest_12_reservoir_15ml", display_name: "NEST 12-well reservoir, 15 mL", role: "reservoir", contents: { A1: "diluent", A2: "compound" } },
 ];
 
-const DECK_SLOTS = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3", "D1", "D2", "D3"];
-
-/** The Flex deck schematic (BRIEF 5.10). A-row at the top (back of the robot), D at the
- *  bottom; 3 columns. No logos — everything is drawn. Renders with or without sim.deck. */
+/** The Flex deck (BRIEF 5.10, V1). When the run is replayable, the animated deck + replay
+ *  render together; otherwise the deck layout is drawn in its starting state. No logos. */
 export function Deck({ sim, design }: Props) {
-  const loaded = new Map((sim?.deck?.length ? sim.deck : FIXED).map((s) => [s.slot, s]));
+  const reduced = useReducedMotion() ?? false;
+  const deck = sim?.deck?.length ? sim.deck : FIXED;
+  const loaded = new Map(deck.map((s) => [s.slot, s]));
+  const replayable = sim && design && isReplayable(sim);
 
   return (
     <div className={styles.bench}>
-      <div className={styles.deck} aria-label="Opentrons Flex deck">
-        {DECK_SLOTS.map((slot) => {
-          const item = loaded.get(slot);
-          return (
-            <div key={slot} className={`${styles.slot} ${item ? styles[item.role] ?? "" : ""}`}>
-              <span className={styles.slotLabel}>{slot}</span>
-              {item && <span className={styles.load}>{roleShort(item)}</span>}
-            </div>
-          );
-        })}
-      </div>
+      {replayable ? (
+        <Replay sim={sim!} design={design!} />
+      ) : (
+        <DeckSvg
+          deck={deck}
+          state={initialState(design?.dilution.top_nM ?? 1)}
+          step={null}
+          ic50NM={design?.prior_ic50.median_nM ?? 1}
+          reduced={reduced}
+        />
+      )}
       <p className={styles.caption}>
-        Flex deck schematic. {sim?.deck?.length ? "Layout from the simulator." : "Fixed compiler layout."}
+        Flex deck. {sim?.deck?.length ? "Layout from the simulator." : "Fixed compiler layout."}
       </p>
       <ul className={styles.legend}>
         {[...loaded.values()].map((s) => (
           <li key={s.slot}>{s.slot}: {labwareName(s.load_name) || s.display_name}</li>
         ))}
       </ul>
-      {sim && design && <Replay sim={sim} design={design} />}
     </div>
   );
-}
-
-function roleShort(s: DeckSlot): string {
-  switch (s.role) {
-    case "tips": return "tips";
-    case "plate": return "plate";
-    case "reservoir": return "reservoir";
-    case "trash": return "trash";
-    default: return "";
-  }
 }
