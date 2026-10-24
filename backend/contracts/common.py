@@ -73,3 +73,13 @@ def chembl_compound_url(compound_chembl_id: str) -> str | None:
     if cid and cid.upper().startswith("CHEMBL"):
         return f"https://www.ebi.ac.uk/chembl/explore/compound/{cid}"
     return None
+
+
+def chembl_document_url(document_chembl_id: str | None) -> str | None:
+    """Human-viewable ChEMBL document (paper) report card: shows the paper's title and DOI.
+    Used for citation links so each rationale item opens its source paper, not a broken
+    activity page."""
+    did = (document_chembl_id or "").strip()
+    if did and did.upper().startswith("CHEMBL"):
+        return f"https://www.ebi.ac.uk/chembl/explore/document/{did}"
+    return None

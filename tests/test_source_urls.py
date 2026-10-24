@@ -26,4 +26,5 @@ def test_designer_prior_and_rationale_have_urls():
     assert "explore/compound" in d.prior_ic50.source.url
     for item in d.rationale:
         assert item.url and "chembl" in item.url
+        assert "explore/document" in item.url  # citation links its source paper
         assert item.document_chembl_id  # looked up from the pair's papers

@@ -65,7 +65,7 @@ export function ReviewThread({ design }: Props) {
           </p>
           <p className={styles.modelLabel}>Model's argument, not verified</p>
           <p className={styles.verdict}>
-            Proposed {turn.field} = {turn.proposed_value}. p90 {turn.p90_before.toFixed(2)}x →{" "}
+            Proposed {turn.field} = {turn.proposed_value}. p90 {turn.p90_before.toFixed(2)}x to{" "}
             {turn.p90_after.toFixed(2)}x, +{turn.extra_tips} tips.{" "}
             {turn.verdict === "supported"
               ? "Simulation supports this change."
@@ -105,7 +105,7 @@ function CitationTurn({ item }: { item: RationaleItem }) {
           <p className={styles.claim}>{item.claim}</p>
           {item.url && (
             <a className={styles.pmid} href={item.url} target="_blank" rel="noreferrer">
-              ChEMBL activity {item.evidence_id}
+              {item.document_chembl_id ? `Source paper ${item.document_chembl_id}` : `ChEMBL activity ${item.evidence_id}`}
             </a>
           )}
         </>

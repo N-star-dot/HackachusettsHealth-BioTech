@@ -23,7 +23,12 @@ from backend.contracts import (
     Source,
     Volumes,
 )
-from backend.contracts.common import SourceType, chembl_compound_url, source_url
+from backend.contracts.common import (
+    SourceType,
+    chembl_compound_url,
+    chembl_document_url,
+    source_url,
+)
 from backend.stage2_design.demo_pairs import get_demo_pair
 
 _MAX_TOP_nM = 100_000.0
@@ -71,7 +76,9 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
             evidence_id=aid,
             quote=None,
             status="unverified",  # the checker promotes to 'verified' if the id matches
-            url=source_url(SourceType.CHEMBL_ACTIVITY, aid),  # B1.6
+            # link the source PAPER (ChEMBL document report card), not the activity page,
+            # so a citation opens its paper with title + DOI.
+            url=chembl_document_url(doc) or source_url(SourceType.CHEMBL_ACTIVITY, aid),  # B1.6
             document_chembl_id=doc,
         ))
 
