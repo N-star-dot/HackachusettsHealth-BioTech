@@ -28,7 +28,14 @@ from backend.contracts.experiment_design import (
     Volumes,
     RationaleItem,
 )
-from backend.contracts.sim_result import SimResult, SimulatorInfo, CostBreakdown, ProtocolStep
+from backend.contracts.sim_result import (
+    SimResult,
+    SimulatorInfo,
+    CostBreakdown,
+    ProtocolStep,
+    StepLocation,
+    DeckSlot,
+)
 from backend.contracts.uncertainty_report import (
     UncertaintyReport,
     NoiseModel,
@@ -59,6 +66,8 @@ __all__ = [
     "SimulatorInfo",
     "CostBreakdown",
     "ProtocolStep",
+    "StepLocation",
+    "DeckSlot",
     "UncertaintyReport",
     "NoiseModel",
     "FoldError",
