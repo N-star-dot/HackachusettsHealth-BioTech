@@ -1,8 +1,8 @@
 # Data contracts — design
 
 ## Shared pieces (`backend/contracts/common.py`)
-- `SourceType` enum: `openalex | pubmed | chembl_activity | semantic_scholar | paper |
-  spec | simulator | simulated`.
+- `SourceType` enum: `openalex | pubmed | chembl_activity | paper | spec | simulator |
+  simulated`.
 - `Source { type, id, url? }` — attached to every real number.
 - `SafetyGate { pass, reasons[] }` — pass/fail, checked before scoring.
 

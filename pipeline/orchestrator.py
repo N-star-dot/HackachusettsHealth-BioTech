@@ -39,6 +39,20 @@ class PipelineResult:
     pair: dict | None = None  # {label, compound_chembl_id, target_chembl_id, compound_name, target_name, match}
 
 
+def _safe_title_lookup(pmid: str) -> str | None:
+    """Resolve a PMID title via PubMed (cached), treating any failure as unverified.
+
+    In offline mode an uncached PMID raises OfflineCacheMiss; a live lookup can fail
+    on network errors. Either way the citation stays unverified — the conservative,
+    source-honest default.
+    """
+    try:
+        from pipeline.ingest import pubmed
+        return pubmed.fetch_title(pmid)
+    except Exception:  # noqa: BLE001 - any lookup failure -> treat citation as unverified
+        return None
+
+
 def run_pipeline(
     query: str,
     weights: dict[str, float] | None = None,
@@ -46,9 +60,7 @@ def run_pipeline(
     seed: int = 42,
     reader_cv: float = 0.05,
     persist: bool = True,
-    compound_chembl_id: str | None = None,
-    run_id: str | None = None,
-    openalex_topic_id: str | None = None,
+    target_chembl_id: str | None = None,
 ) -> PipelineResult:
     db = get_db() if persist else None
     run_id = run_id or (db.create_run(query) if db else "ephemeral")
@@ -65,22 +77,21 @@ def run_pipeline(
             db.set_run_status(run_id, "done")
         return PipelineResult(run_id, topic, None, None, None, blocked=True)
 
-    # --- stage 2: pick the pair from the question, design, then check citations ---
-    pair, match = match_pair(query, compound_chembl_id)
-    compound = pair["compound_chembl_id"]
-    compound_name, target_name = pair_names(pair)
-    pair_info = {
-        "label": pair["label"],
-        "compound_chembl_id": compound,
-        "target_chembl_id": pair["target_chembl_id"],
-        "compound_name": compound_name,
-        "target_name": target_name,
-        "match": match,
-    }
-
-    design = design_experiment(compound_chembl_id=compound)
-    evidence = evidence_abstracts_for(compound)
-    design = check_citations(design, pair=get_demo_pair(compound), evidence_abstracts=evidence)
+    # --- stage 2: design + citation check ---
+    # Real ChEMBL prior when a target is supplied (cached); None -> placeholder prior.
+    prior = None
+    if target_chembl_id:
+        try:
+            from pipeline.ingest import chembl
+            prior = chembl.prior_ic50_nM(target_chembl_id)
+        except Exception:  # noqa: BLE001 - no/failed prior -> placeholder prior in designer
+            prior = None
+    design = design_experiment(
+        topic.topic.openalex_id, prior=prior, target_chembl_id=target_chembl_id
+    )
+    # Verify PMIDs against PubMed (cached). Any lookup failure (offline cache miss,
+    # network error, unresolved PMID) is treated as unverified — conservative and safe.
+    design = check_citations(design, lookup_title=_safe_title_lookup)
     if db:
         db.save_report(run_id, "pair", pair_info)
         db.save_report(run_id, "design", design)

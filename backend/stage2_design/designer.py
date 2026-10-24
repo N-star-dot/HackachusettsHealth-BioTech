@@ -86,9 +86,45 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
     if capped:
         notes.append(f"top_nM capped at {_MAX_TOP_nM:g} nM (uncapped would exceed it)")
 
-    # B1.1: volumes must realise the dilution factor; derive diluent from it.
-    transfer_uL = 50.0
-    diluent_uL = transfer_uL * (dilution.factor - 1.0)
+def design_experiment(
+    topic_id: str,
+    prior_median_nM: float = 120.0,
+    prior: dict | None = None,
+    target_chembl_id: str | None = None,
+) -> ExperimentDesign:
+    """Deterministic placeholder design covering the prior by ~2 log units each side.
+
+    Data wiring (this task): when a real ChEMBL `prior` dict is supplied (from
+    `pipeline.ingest.chembl.prior_ic50_nM`), its median/n/spread and activity-id source
+    are used instead of the placeholder, so the starting IC50 guess traces to ChEMBL.
+    The dilution range is recentred on the real median so it still spans the prior.
+
+    Real (future) version: prompt the Designer LLM with the topic, top PubMed abstracts
+    and this prior, parse its JSON into ExperimentDesign, then run the citation checker.
+    """
+    if prior:
+        median_nM = float(prior.get("median_nM", prior_median_nM))
+        activity_ids = prior.get("activity_ids") or []
+        prior_model = PriorIC50(
+            median_nM=median_nM,
+            n_measurements=int(prior.get("n_measurements", 1)),
+            spread_log10=float(prior.get("spread_log10", 0.68)),
+            source=Source(
+                type=SourceType.CHEMBL_ACTIVITY,
+                id=str(activity_ids[0]) if activity_ids else (target_chembl_id or "chembl"),
+            ),
+        )
+    else:
+        median_nM = prior_median_nM
+        prior_model = PriorIC50(
+            median_nM=prior_median_nM,
+            n_measurements=6,
+            spread_log10=0.68,
+            source=Source(type=SourceType.CHEMBL_ACTIVITY, id="placeholder"),
+        )
+
+    # top of the dilution series ~2 log10 units above the median (100x), 3-fold steps.
+    top_nM = round(median_nM * 100.0, 3)
 
     design = ExperimentDesign(
         design_id=design_id,
@@ -96,50 +132,11 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
         assay=Assay(
             type="dose_response",
             readout="percent_activity",
-            target_chembl_id=target,
-            compound_chembl_id=compound,
+            target_chembl_id=target_chembl_id or "CHEMBL0000",
+            compound_chembl_id="CHEMBL0000",
         ),
-        prior_ic50=PriorIC50(
-            median_nM=median_nM,
-            n_measurements=int(prior.get("n_papers", len(papers)) or 1),
-            spread_log10=spread,
-            source=Source(
-                type=SourceType.CHEMBL_ACTIVITY,
-                id=(_prior_ids := ",".join(str(a) for a in prior.get("activity_ids", [])[:10]) or "none"),
-                # link the compound report card (human-viewable) rather than a raw
-                # activity id, so the IC50 prior's source opens a useful page.
-                url=chembl_compound_url(compound) or source_url(SourceType.CHEMBL_ACTIVITY, _prior_ids),
-            ),
-        ),
-        dilution=dilution,
-        replicates=replicates,
-        controls=controls,
-        plate=Plate(labware="corning_96_wellplate_360ul_flat", layout="rows"),
-        volumes_uL=Volumes(transfer=transfer_uL, diluent=diluent_uL),
-        pipette="flex_1channel_1000",
-        tiprack="opentrons_flex_96_tiprack_200ul",
-        rationale=rationale,
-        notes=notes,
-    )
-    return design
-
-
-def design_experiment(topic_id: str | None = None, compound_chembl_id: str | None = None,
-                      design_id: str = "d-001") -> ExperimentDesign:
-    """Entry point. Loads a demo pair (by compound id, default the first) and builds a
-    deterministic design. Falls back to a minimal placeholder only if no demo data exists."""
-    pair = get_demo_pair(compound_chembl_id)
-    if pair is not None:
-        return design_from_pair(pair, design_id=design_id)
-
-    # last-resort placeholder (no demo data on disk) — keeps the stage from crashing
-    return ExperimentDesign(
-        design_id=design_id,
-        topic_id=topic_id or "unknown",
-        assay=Assay(target_chembl_id="CHEMBL0000", compound_chembl_id="CHEMBL0000"),
-        prior_ic50=PriorIC50(median_nM=120.0, n_measurements=1, spread_log10=0.68,
-                             source=Source(type=SourceType.CHEMBL_ACTIVITY, id="none")),
-        dilution=Dilution(top_nM=12000, factor=3, points=10),
+        prior_ic50=prior_model,
+        dilution=Dilution(top_nM=top_nM, factor=3, points=10),
         replicates=3,
         controls=Controls(positive_wells=4, negative_wells=4),
         plate=Plate(),

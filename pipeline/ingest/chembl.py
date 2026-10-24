@@ -3,22 +3,16 @@
 Free REST API. Release 36 (Oct 2025): ~2.8M compounds, 17,803 targets. Cached on
 first pull. Feeds the stage-2 prior and the stage-4 calibration test.
 
-Data-quality rules (critical — a sloppy pull makes the calibration number meaningless):
-  * Keep only records with a non-null `pchembl_value`. ChEMBL computes pChEMBL only when
-    the relation is '=', units are nM, value > 0, and there is no data-validity flag — so
-    this one filter rejects censored values ('>10000' = "no effect at the top dose", NOT
-    10000) and quality-flagged records in a single check.
-  * Drop `potential_duplicate` records (a later paper re-reporting an earlier measurement),
-    which would make labs look like they agree more than they really do.
-  * pChEMBL = -log10(IC50 in molar), so 1 nM -> 9. We use pChEMBL as the log-scale value and
-    keep standard_value (nM) only for display.
+Parsing is split from fetching: `_parse_activities` turns a raw ChEMBL activity body
+into clean IC50 records in nM, dropping non-numeric or non-positive values, so a messy
+response never poisons the prior or the calibration groups.
 """
 
 from __future__ import annotations
 
 import math
 import statistics
-from collections import defaultdict
+from typing import Any
 
 from pipeline.ingest.http_cache import cached_get_json
 
@@ -36,50 +30,26 @@ CALIBRATION_TARGETS: tuple[str, ...] = (
     "CHEMBL2971", "CHEMBL233", "CHEMBL217", "CHEMBL4005", "CHEMBL2095",
 )
 
-
-def pchembl_to_nM(pchembl: float) -> float:
-    """pChEMBL (-log10 molar) -> nM. 9 -> 1 nM."""
-    return 10 ** (9.0 - pchembl)
-
-
-def _clean_activities(acts: list[dict]) -> list[dict]:
-    """Keep only quality IC50 records for the calibration/prior use case:
-
-      * non-null pchembl_value  (rejects censored '>'/'<' and quality-flagged records),
-      * not a potential_duplicate,
-      * assay_type 'B'          (binding / biochemical on purified protein — exactly what
-                                 the app simulates; cell-based 'F' assays give different
-                                 numbers and would inflate apparent lab disagreement),
-      * wild-type target        (empty assay_variant_mutation).
-
-    Returns normalised rows carrying the log-scale pChEMBL value, the nM value for
-    display, and the source document for paper-level collapsing.
-    """
-    out = []
-    for a in acts:
-        pch = a.get("pchembl_value")
-        if pch is None:
+def _parse_activities(body: Any) -> list[dict]:
+    """Normalise a /activity response into clean IC50 records (nM, positive values)."""
+    if not isinstance(body, dict):
+        return []
+    out: list[dict] = []
+    for a in body.get("activities", []) or []:
+        if not isinstance(a, dict):
             continue
-        if a.get("potential_duplicate"):
-            continue
-        if a.get("assay_type") != "B":  # binding/biochemical only
-            continue
-        if a.get("assay_variant_mutation"):  # non-empty -> mutant target, skip
+        val = a.get("standard_value")
+        if val is None:
             continue
         try:
-            pch = float(pch)
+            value_nM = float(val)
         except (TypeError, ValueError):
             continue
-        nM = None
-        if a.get("standard_value") is not None:
-            try:
-                nM = float(a["standard_value"])
-            except (TypeError, ValueError):
-                nM = None
+        if not math.isfinite(value_nM) or value_nM <= 0:
+            continue
         out.append({
             "activity_id": a.get("activity_id"),
-            "pchembl_value": pch,
-            "standard_value_nM": nM if (nM and nM > 0) else pchembl_to_nM(pch),
+            "standard_value_nM": value_nM,
             "assay_chembl_id": a.get("assay_chembl_id"),
             "document_chembl_id": a.get("document_chembl_id"),
             "molecule_chembl_id": a.get("molecule_chembl_id"),
@@ -87,72 +57,25 @@ def _clean_activities(acts: list[dict]) -> list[dict]:
     return out
 
 
-def _fetch_clean_activities(
-    target_chembl_id: str, max_pages: int = 3, page_size: int = 1000
-) -> list[dict]:
-    """Paginate the activity endpoint (server-side pchembl + assay_type=B) -> cleaned rows."""
-    rows: list[dict] = []
-    offset = 0
-    for _ in range(max_pages):
-        params = {
-            "target_chembl_id": target_chembl_id,
-            "standard_type": "IC50",
-            "standard_units": "nM",
-            "pchembl_value__isnull": "false",  # drop censored/flagged early
-            "assay_type": "B",                  # binding/biochemical only
-            "limit": page_size,
-            "offset": offset,
-            "format": "json",
-        }
-        body = cached_get_json("chembl", f"{_BASE}/activity", params=params)
-        acts = body.get("activities", [])
-        if not acts:
-            break
-        rows.extend(_clean_activities(acts))
-        offset += page_size
-        if not body.get("page_meta", {}).get("next"):
-            break
-    return rows
-
-
-def _collapse_by_document(rows: list[dict]) -> list[dict]:
-    """Collapse records to ONE value per source document: the median pChEMBL of that paper.
-
-    This makes each paper vote once, so a single paper reporting 16 measurements does not
-    dominate a group. Returns [{document_chembl_id, pchembl_value, standard_value_nM,
-    activity_ids}] sorted for determinism.
-    """
-    by_doc: dict[str, list[dict]] = defaultdict(list)
-    for r in rows:
-        if r["document_chembl_id"]:
-            by_doc[r["document_chembl_id"]].append(r)
-    collapsed = []
-    for doc, recs in by_doc.items():
-        pch_med = statistics.median(r["pchembl_value"] for r in recs)
-        collapsed.append({
-            "document_chembl_id": doc,
-            "pchembl_value": pch_med,
-            "standard_value_nM": pchembl_to_nM(pch_med),
-            "activity_ids": [r["activity_id"] for r in recs],
-        })
-    return sorted(collapsed, key=lambda d: d["document_chembl_id"])
-
-
 def ic50_activities(target_chembl_id: str, limit: int = 100) -> list[dict]:
-    """Quality IC50 activity records (nM + pChEMBL) for a target."""
-    return _fetch_clean_activities(target_chembl_id, max_pages=1, page_size=limit)
+    """Return IC50 activity records (nM) for a target, each with its activity id.
+    [{activity_id, standard_value_nM, assay_chembl_id, document_chembl_id, molecule_chembl_id}]."""
+    params = {
+        "target_chembl_id": target_chembl_id,
+        "standard_type": "IC50",
+        "standard_units": "nM",
+        "limit": limit,
+        "format": "json",
+    }
+    body = cached_get_json("chembl", f"{_BASE}/activity", params=params)
+    return _parse_activities(body)
 
 
-def fetch_document(document_chembl_id: str) -> dict | None:
-    """Fetch a ChEMBL document's bibliographic metadata (cached).
-
-    Returns {document_chembl_id, pubmed_id, title, year, journal} or None if the record
-    has no PubMed id (we can't fetch an abstract for it, so it's useless to the evidence
-    set). Document fetch only — stays within the stage-2 ChEMBL scope.
-    """
-    body = cached_get_json("chembl", f"{_BASE}/document/{document_chembl_id}.json")
-    pubmed_id = body.get("pubmed_id")
-    if not pubmed_id:
+def prior_ic50_nM(target_chembl_id: str) -> dict | None:
+    """Summarise IC50 measurements into a prior: median, n, spread (log10)."""
+    acts = ic50_activities(target_chembl_id)
+    values = [a["standard_value_nM"] for a in acts if a["standard_value_nM"] > 0]
+    if not values:
         return None
     return {
         "document_chembl_id": document_chembl_id,

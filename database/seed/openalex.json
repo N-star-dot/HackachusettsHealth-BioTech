@@ -1,0 +1,30 @@
+[
+  {
+    "request_key": "https://api.openalex.org/topics?per-page=10&search=kinase inhibitors for liver fibrosis",
+    "status_code": 200,
+    "response": {
+      "results": [
+        {"id": "https://openalex.org/T10159", "display_name": "Kinase Inhibitors in Fibrosis", "works_count": 4120},
+        {"id": "https://openalex.org/T11088", "display_name": "Liver Fibrosis Mechanisms", "works_count": 9850}
+      ]
+    }
+  },
+  {
+    "request_key": "https://api.openalex.org/works?filter=topics.id:T10159,from_publication_date:2015-01-01,to_publication_date:2024-12-31&group_by=publication_year",
+    "status_code": 200,
+    "response": {
+      "group_by": [
+        {"key": "2015", "count": 612},
+        {"key": "2016", "count": 655},
+        {"key": "2017", "count": 701},
+        {"key": "2018", "count": 760},
+        {"key": "2019", "count": 812},
+        {"key": "2020", "count": 905},
+        {"key": "2021", "count": 1010},
+        {"key": "2022", "count": 1098},
+        {"key": "2023", "count": 1176},
+        {"key": "2024", "count": 1240}
+      ]
+    }
+  }
+]

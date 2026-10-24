@@ -14,7 +14,6 @@ class SourceType(str, Enum):
     OPENALEX = "openalex"
     PUBMED = "pubmed"
     CHEMBL_ACTIVITY = "chembl_activity"
-    SEMANTIC_SCHOLAR = "semantic_scholar"
     PAPER = "paper"  # a cited DOI, e.g. the Kalliokoski noise paper
     SPEC = "spec"  # a published vendor spec table, e.g. Opentrons pipettes
     SIMULATOR = "simulator"  # the Opentrons simulator

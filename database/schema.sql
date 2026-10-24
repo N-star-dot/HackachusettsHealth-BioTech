@@ -16,7 +16,7 @@ PRAGMA foreign_keys = ON;
 -- 1. External API response cache (owned by the pipeline / ingest workstream)
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS api_cache (
-    source       TEXT NOT NULL,              -- 'openalex' | 'pubmed' | 'chembl' | 'semantic_scholar'
+    source       TEXT NOT NULL,              -- 'openalex' | 'pubmed' | 'chembl'
     request_key  TEXT NOT NULL,              -- normalised request (e.g. endpoint + sorted params)
     response     TEXT NOT NULL,              -- raw JSON body as returned by the API
     status_code  INTEGER NOT NULL DEFAULT 200,

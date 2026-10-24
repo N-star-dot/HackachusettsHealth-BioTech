@@ -1,14 +1,18 @@
 """Smoke tests for the end-to-end pipeline and the safety gate."""
 
+import pytest
+
 from backend.safety import check_topic_safety
-from backend.stage4_uncertainty import (
-    calibrate,
-    coverage_90,
-    run_uncertainty,
-    widen_until_calibrated,
-)
 from backend.stage2_design import design_experiment
+from backend.stage4_uncertainty import run_uncertainty
 from pipeline import run_pipeline
+
+
+@pytest.fixture(autouse=True)
+def _offline(monkeypatch):
+    """Keep the pipeline off the network: stage 1's OpenAlex lookups become cache
+    misses that fall back to placeholder counts, so these tests stay deterministic."""
+    monkeypatch.setenv("INGEST_OFFLINE", "1")
 
 
 def test_safety_gate_blocks_dangerous_topic():

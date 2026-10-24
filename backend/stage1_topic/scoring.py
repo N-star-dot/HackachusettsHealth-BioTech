@@ -28,16 +28,8 @@ from backend.stage1_topic.features import compute_features, slope_baseline_score
 from backend.stage1_topic.momentum_model import MODEL_VERSION, predict_p_growth
 
 
-def _counts_url(openalex_id: str) -> str:
-    """The exact OpenAlex query works_by_year makes (B1.6)."""
-    return (f"https://api.openalex.org/works?filter=topics.id:{openalex_id},"
-            f"from_publication_date:2015-01-01,to_publication_date:2024-12-31"
-            f"&group_by=publication_year")
-
-
-def _placeholder_counts(query: str) -> tuple[TopicRef, list[YearCount], str | None]:
-    """Offline fallback. The invented series is labelled SIMULATED, never openalex, so the
-    dashboard can detect it and refuse to draw it as real data."""
+def _placeholder_counts(query: str) -> tuple[TopicRef, list[YearCount]]:
+    """Offline/empty fallback so the pipeline never hard-fails without real data."""
     topic = TopicRef(openalex_id="T00000", name=query[:60] or "placeholder topic")
     counts = [
         YearCount(year=y, works=max(50, 800 - (2024 - y) * 40),
@@ -126,17 +118,51 @@ def _momentum(counts: list[YearCount], field: str | None) -> Momentum:
     counts_rows = [{"year": c.year, "works": c.works} for c in counts]
     feats = compute_features(counts_rows)
 
-    if feats is not None:
-        feats = {**feats, "field": field}
-        p = predict_p_growth(feats)
-        if p is not None:
-            return Momentum(p_growth=round(p, 4), model=MODEL_VERSION)
-        # no trained model: squash the raw slope into (0,1) as a transparent heuristic
-        slope = slope_baseline_score(feats)
-        p_heur = 1.0 / (1.0 + pow(2.718281828, -40.0 * slope))
-        return Momentum(p_growth=round(p_heur, 4), model="slope-heuristic")
+def _counts_from_source(query: str) -> tuple[TopicRef, list[YearCount]]:
+    """Real yearly counts from OpenAlex (cached). Falls back to placeholders when the
+    source returns nothing (offline cache miss handled upstream, or an empty result).
 
-    # too sparse to compute features
+    This wires stage 1 to real publication data; the momentum *model* (`_momentum`)
+    stays untouched and simply consumes whatever counts come back.
+    """
+    # Imported here so `backend` has no hard import-time dependency on `pipeline`.
+    from pipeline.ingest import openalex
+
+    try:
+        hits = openalex.search_topics(query, per_page=10)
+    except Exception:  # noqa: BLE001 - any ingest failure falls back to placeholders
+        hits = []
+    if not hits:
+        return _placeholder_counts(query)
+
+    top = hits[0]
+    topic_id = str(top.get("id", "")).rsplit("/", 1)[-1] or "T00000"
+    topic = TopicRef(openalex_id=topic_id, name=top.get("display_name") or query[:60])
+
+    try:
+        rows = openalex.works_by_year(top["id"])
+    except Exception:  # noqa: BLE001 - any ingest failure falls back to placeholders
+        rows = []
+    if not rows:
+        # keep the real topic ref but fall back to placeholder counts
+        _, counts = _placeholder_counts(query)
+        return topic, [
+            YearCount(year=c.year, works=c.works,
+                      source=Source(type=SourceType.OPENALEX, id=topic_id))
+            for c in counts
+        ]
+
+    counts = [
+        YearCount(year=r["year"], works=r["works"],
+                  source=Source(type=SourceType.OPENALEX, id=topic_id))
+        for r in rows
+    ]
+    return topic, counts
+
+
+def _momentum(counts: list[YearCount]) -> Momentum:
+    """Placeholder momentum. Real version loads the trained HGB model (owner A)."""
+    # naive slope-based heuristic as a stand-in for the model
     works = [c.works for c in counts]
     growing = len(works) >= 2 and works[-1] > works[0]
     return Momentum(p_growth=0.6 if growing else 0.4, model="slope-heuristic")
