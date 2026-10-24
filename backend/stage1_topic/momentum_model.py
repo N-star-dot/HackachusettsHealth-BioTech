@@ -72,6 +72,25 @@ def _top_decile_precision(scores: np.ndarray, growth: np.ndarray) -> float:
     return float(np.mean(in_top25))
 
 
+def _strip_unpicklable_rng(clf) -> None:
+    """Remove fitted numpy Generator attributes so the pickle loads across numpy 1.x/2.x.
+
+    HistGradientBoostingClassifier keeps a numpy Generator (`_feature_subsample_rng`) after
+    fit. numpy random Generators don't unpickle across the 1.x<->2.x boundary (PCG64 isn't
+    recognised), which breaks loading the model in an env with a different numpy. These
+    attributes are only used during fit, so dropping them is safe for a predict-only model.
+    """
+    import numpy as _np
+
+    for name in list(vars(clf)):
+        val = getattr(clf, name, None)
+        if isinstance(val, (_np.random.Generator, _np.random.RandomState)):
+            try:
+                delattr(clf, name)
+            except AttributeError:
+                setattr(clf, name, None)
+
+
 def train(rows: list[dict], seed: int = 0) -> dict:
     """Train + evaluate with RepeatedStratifiedKFold. Returns the full metric bundle.
 
@@ -117,6 +136,7 @@ def train(rows: list[dict], seed: int = 0) -> dict:
     # --- fit final model on ALL rows and persist ---
     final = _make_clf(seed)
     final.fit(X, y)
+    _strip_unpicklable_rng(final)  # make the pickle portable across numpy 1.x / 2.x
     MODEL_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(MODEL_PATH, "wb") as fh:
         pickle.dump(
@@ -147,15 +167,33 @@ _cache: dict | None = None
 
 
 def load_model() -> dict | None:
-    """Load the pickled model bundle, or None if it hasn't been trained yet."""
+    """Load the pickled model bundle, or None if it can't be loaded.
+
+    Returns None (not an exception) when the pickle is missing OR was written by a
+    different numpy/sklearn version than this env has. sklearn pickles are not portable
+    across minor versions, so in a mismatched env the caller falls back to the slope
+    heuristic. The fix is to retrain in this env: `python scripts/train_momentum.py`.
+    """
     global _cache
     if _cache is not None:
         return _cache
     if not MODEL_PATH.exists():
         return None
-    with open(MODEL_PATH, "rb") as fh:
-        _cache = pickle.load(fh)
-    return _cache
+    try:
+        with open(MODEL_PATH, "rb") as fh:
+            _cache = pickle.load(fh)
+        return _cache
+    except Exception as exc:  # version-mismatched or corrupt pickle
+        import warnings
+
+        warnings.warn(
+            f"momentum model pickle could not be loaded ({type(exc).__name__}: {exc}); "
+            "falling back to the slope heuristic. Retrain in this env with "
+            "`python scripts/train_momentum.py`.",
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        return None
 
 
 def predict_p_growth(features: dict) -> float | None:

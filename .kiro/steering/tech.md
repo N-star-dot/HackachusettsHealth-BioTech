@@ -4,6 +4,10 @@
 - **Backend:** Python 3.10+ (Opentrons pins <=3.13; install it in a 3.13 env for the real sim).
 - **Models:** Pydantic v2 for contracts, numpy/scipy for the Monte Carlo, scikit-learn
   (`HistGradientBoostingClassifier`) for the momentum model.
+  - The trained model (`models/momentum_hgb.pkl`) is **gitignored and not portable across
+    numpy/sklearn versions**. Train it in whatever env you run: `python scripts/train_momentum.py`.
+    `load_model()` falls back to the slope heuristic (with a warning) if the pickle was
+    written by a different env, so the pipeline never crashes.
 - **API:** FastAPI + uvicorn.
 - **Database:** SQLite (committed schema, gitignored data file). WAL mode for the parallel team.
 - **Frontend:** dashboard in `frontend/` (owner C's choice).
