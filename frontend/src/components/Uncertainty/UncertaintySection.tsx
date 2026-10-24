@@ -1,5 +1,7 @@
 import { Num } from "../Num/Num";
 import { simulated, src, assumed } from "../Num/provenance";
+import { FoldErrorDots } from "./FoldErrorDots";
+import { CurveBand } from "./CurveBand";
 import { fold, pct } from "../../lib/format";
 import type { Source, UncertaintyReport } from "../../api/types";
 import styles from "./UncertaintySection.module.css";
@@ -44,6 +46,9 @@ export function UncertaintySection({ report }: Props) {
           the true IC50 fell outside the tested range.{" "}
           <Num value={pct(report.failed_fit_share)} provenance={sim()} /> of curve fits failed.
         </p>
+
+        <FoldErrorDots report={report} />
+        <CurveBand report={report} />
 
         <table className={styles.noise}>
           <tbody>

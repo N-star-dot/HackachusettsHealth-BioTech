@@ -1,0 +1,4 @@
+.wrap { display: flex; flex-direction: column; gap: var(--space-1); }
+.svg { width: 100%; max-width: 340px; height: auto; }
+.caption { font-size: 12px; color: var(--graphite); }
+.axisText { font-size: 11px; fill: var(--graphite); font-stretch: 75%; }
