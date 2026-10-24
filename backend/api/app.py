@@ -19,6 +19,7 @@ from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import PlainTextResponse
 from pydantic import BaseModel, Field
 
 from backend.contracts import (
@@ -214,3 +215,19 @@ def simulate(req: SimulateRequest) -> SimResult:
         )
     path = compile_whatif(req.design)
     return simulate_protocol(path, req.design)
+
+
+_PROTOCOLS_DIR = __import__("pathlib").Path(__file__).resolve().parents[2] / "protocols"
+
+
+@app.get("/api/protocol/{name}", response_class=PlainTextResponse)
+def protocol(name: str) -> str:
+    """Return the generated protocol .py as text. Looks in protocols/ then protocols/whatif/.
+
+    `name` is the file's basename without .py and must be filename-safe (B1.4)."""
+    if not _DESIGN_ID_RE.match(name):
+        raise HTTPException(status_code=422, detail="bad protocol name")
+    for candidate in (_PROTOCOLS_DIR / f"{name}.py", _PROTOCOLS_DIR / "whatif" / f"{name}.py"):
+        if candidate.is_file():
+            return candidate.read_text()
+    raise HTTPException(status_code=404, detail=f"protocol {name!r} not found")
