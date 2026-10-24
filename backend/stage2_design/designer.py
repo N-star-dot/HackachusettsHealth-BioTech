@@ -23,7 +23,7 @@ from backend.contracts import (
     Source,
     Volumes,
 )
-from backend.contracts.common import SourceType
+from backend.contracts.common import SourceType, source_url
 from backend.stage2_design.demo_pairs import get_demo_pair
 
 _MAX_TOP_nM = 100_000.0
@@ -62,13 +62,17 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
     papers = prior.get("papers", [])[:5]
     rationale: list[RationaleItem] = []
     for p in papers:
+        aid = str(p["activity_id"])
+        doc = p.get("document_chembl_id")
         rationale.append(RationaleItem(
             claim="",  # checker fills this from the record
             pmid="",
             evidence_type="chembl_activity",
-            evidence_id=str(p["activity_id"]),
+            evidence_id=aid,
             quote=None,
             status="unverified",  # the checker promotes to 'verified' if the id matches
+            url=source_url(SourceType.CHEMBL_ACTIVITY, aid),  # B1.6
+            document_chembl_id=doc,
         ))
 
     notes: list[str] = []
@@ -94,7 +98,8 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
             spread_log10=spread,
             source=Source(
                 type=SourceType.CHEMBL_ACTIVITY,
-                id=",".join(str(a) for a in prior.get("activity_ids", [])[:10]) or "none",
+                id=(_prior_ids := ",".join(str(a) for a in prior.get("activity_ids", [])[:10]) or "none"),
+                url=source_url(SourceType.CHEMBL_ACTIVITY, _prior_ids),
             ),
         ),
         dilution=dilution,

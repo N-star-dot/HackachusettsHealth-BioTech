@@ -110,6 +110,10 @@ class RationaleItem(BaseModel):
     verified: bool = Field(
         default=False, description="Kept for back-compat; equals (status == 'verified')."
     )
+    url: str | None = Field(default=None, description="Direct link to the cited evidence (B1.6).")
+    document_chembl_id: str | None = Field(
+        default=None, description="Source ChEMBL document for chembl_activity items (B1.6)."
+    )
 
     @model_validator(mode="after")
     def _sync_verified(self) -> "RationaleItem":
