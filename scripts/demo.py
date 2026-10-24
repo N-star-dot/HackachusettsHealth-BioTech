@@ -37,6 +37,8 @@ def main() -> int:
     u = result.uncertainty
     print(f"  fold_error median={u.fold_error.median:.3f}  p90={u.fold_error.p90:.3f}")
     print(f"  outside_range_share={u.outside_range_share:.3f}  failed_fit_share={u.failed_fit_share:.3f}")
+    print(f"  calibration (vs real ChEMBL): coverage_90={u.calibration.coverage_90} "
+          f"over {u.calibration.pairs} pairs")
     print("  next experiments (ranked by info gained per cost):")
     for ne in u.next_experiments:
         print(f"    - {ne.change}: p90 drop {ne.p90_fold_error_drop_pct}%  score {ne.score}")

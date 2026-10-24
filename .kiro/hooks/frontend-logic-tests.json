@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Logic tests on save",
+      "trigger": "PostFileSave",
+      "description": "Run the pure-logic unit tests when a file under frontend/src/lib changes.",
+      "matcher": "frontend/src/lib/.*",
+      "action": {
+        "type": "command",
+        "command": "npm --prefix frontend run test -- src/lib",
+        "timeout": 120
+      }
+    }
+  ]
+}

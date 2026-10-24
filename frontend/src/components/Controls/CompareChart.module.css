@@ -1,0 +1,14 @@
+.wrap { display: flex; flex-direction: column; gap: var(--space-1); }
+.title { font-size: 16px; font-weight: 600; }
+.hint { font-size: 12px; color: var(--graphite); }
+.svg { width: 100%; max-width: 380px; height: auto; }
+.axis { font-size: 11px; fill: var(--graphite); font-stretch: 75%; }
+.tick { font-size: 9px; fill: var(--graphite); font-variant-numeric: tabular-nums; }
+.pinLabel { font-size: 10px; fill: var(--ink); font-weight: 600; }
+.pointLabel { font-size: 10px; fill: var(--graphite); }
+
+.legend { display: flex; flex-wrap: wrap; gap: var(--space-3); list-style: none; margin: 0; padding: 0; font-size: 12px; color: var(--graphite); }
+.legend li { display: flex; align-items: center; gap: 4px; }
+.dotCurrent { width: 8px; height: 8px; border-radius: 50%; background: var(--ink); display: inline-block; }
+.dotPin { width: 10px; height: 10px; border-radius: 50%; background: var(--sheet); border: 1.2px solid var(--ink); display: inline-block; }
+.dotSugg { width: 8px; height: 8px; border-radius: 50%; border: 1px dashed var(--graphite); display: inline-block; }

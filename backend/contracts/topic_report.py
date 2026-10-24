@@ -54,19 +54,29 @@ class ViabilityMatrix(BaseModel):
         }
     )
     total: float = Field(..., ge=0.0, le=1.0)
+    # Axes that could not be computed for this topic (e.g. offline OpenAlex). They are
+    # excluded from `total`, and the dashboard shows them as "Unavailable offline" (H2).
+    unavailable_axes: list[str] = Field(default_factory=list)
+    # per-axis provenance (B0.2). Keys are axis names; values tag where each axis value
+    # came from. Axes we haven't computed yet carry an 'assumed' Source.
+    axis_sources: dict[str, Source] = Field(default_factory=dict)
+    axis_notes: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _check_total(self) -> "ViabilityMatrix":
-        expected = (
-            self.momentum * self.weights.get("momentum", 0)
-            + self.novelty * self.weights.get("novelty", 0)
-            + self.evidence * self.weights.get("evidence", 0)
-            + self.automatable * self.weights.get("automatable", 0)
-            + self.cost_time * self.weights.get("cost_time", 0)
+        axes = {
+            "momentum": self.momentum,
+            "novelty": self.novelty,
+            "evidence": self.evidence,
+            "automatable": self.automatable,
+            "cost_time": self.cost_time,
+        }
+        skip = set(self.unavailable_axes)
+        num = sum(
+            axes[k] * self.weights.get(k, 0) for k in axes if k not in skip
         )
-        wsum = sum(self.weights.values())
-        if wsum > 0:
-            expected /= wsum  # normalise so total stays in 0..1 even if weights don't sum to 1
+        wsum = sum(w for k, w in self.weights.items() if k not in skip)
+        expected = num / wsum if wsum > 0 else 0.0
         if abs(expected - self.total) > 1e-6:
             raise ValueError(
                 f"matrix total {self.total} does not match weighted axes {expected:.6f}"
@@ -74,10 +84,16 @@ class ViabilityMatrix(BaseModel):
         return self
 
     @staticmethod
-    def weighted_total(axes: dict[str, float], weights: dict[str, float]) -> float:
-        """Helper so producers compute `total` the same way the validator checks it."""
-        num = sum(axes[k] * weights.get(k, 0) for k in axes)
-        den = sum(weights.values())
+    def weighted_total(
+        axes: dict[str, float],
+        weights: dict[str, float],
+        unavailable_axes: list[str] | None = None,
+    ) -> float:
+        """Helper so producers compute `total` the same way the validator checks it.
+        Axes in `unavailable_axes` are excluded from both numerator and weight sum."""
+        skip = set(unavailable_axes or [])
+        num = sum(axes[k] * weights.get(k, 0) for k in axes if k not in skip)
+        den = sum(w for k, w in weights.items() if k not in skip)
         return num / den if den > 0 else 0.0
 
 
@@ -89,3 +105,7 @@ class TopicReport(BaseModel):
     neighbors: list[Neighbor] = Field(default_factory=list)
     matrix: ViabilityMatrix
     safety: SafetyGate
+    offline: bool = Field(
+        default=False,
+        description="True when OpenAlex was unreachable and counts are placeholders.",
+    )

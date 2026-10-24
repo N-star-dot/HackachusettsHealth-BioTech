@@ -10,6 +10,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 from backend.contracts.common import Source
+from backend.contracts.experiment_design import ExperimentDesign
 
 
 class NoiseModel(BaseModel):
@@ -18,6 +19,8 @@ class NoiseModel(BaseModel):
     pipette_bias: float = Field(..., ge=0, description="Systematic pipetting bias.")
     reader_cv: float = Field(..., ge=0, description="Plate-reader scatter, user-set, default 0.05.")
     sources: list[Source] = Field(default_factory=list)
+    # B0.8: exact Source per noise number, so the dashboard popover credits the right one.
+    field_sources: dict[str, Source] = Field(default_factory=dict)
 
 
 class FoldError(BaseModel):
@@ -40,6 +43,8 @@ class NextExperiment(BaseModel):
     extra_compound_uL: float = Field(default=0.0)
     extra_plates: int = Field(default=0)
     score: float = Field(..., description="Fold-error reduction per unit cost. Higher ranks first.")
+    design: ExperimentDesign | None = Field(default=None, description="The candidate design (B1.2).")
+    p90_after: float | None = Field(default=None, description="The candidate's p90 fold error (B1.2).")
 
 
 class UncertaintyReport(BaseModel):
@@ -53,3 +58,6 @@ class UncertaintyReport(BaseModel):
     failed_fit_share: float = Field(..., ge=0.0, le=1.0)
     calibration: Calibration
     next_experiments: list[NextExperiment] = Field(default_factory=list)
+    # B1.3: raw samples (first <=300 runs) and the per-concentration activity band
+    samples: dict[str, list[float]] | None = Field(default=None)
+    curve: dict[str, list[float]] | None = Field(default=None)

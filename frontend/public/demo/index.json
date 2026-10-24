@@ -1,0 +1,20 @@
+[
+  {
+    "file": "run-1.json",
+    "question": "HER2 kinase inhibitors in breast cancer",
+    "recorded_at": "2026-10-24",
+    "commit": "local"
+  },
+  {
+    "file": "run-2.json",
+    "question": "p38 MAPK inhibitors in inflammation",
+    "recorded_at": "2026-10-24",
+    "commit": "local"
+  },
+  {
+    "file": "run-3.json",
+    "question": "JAK inhibitors in autoimmune disease",
+    "recorded_at": "2026-10-24",
+    "commit": "local"
+  }
+]

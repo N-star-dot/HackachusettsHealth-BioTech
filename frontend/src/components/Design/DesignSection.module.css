@@ -1,0 +1,11 @@
+.section { display: flex; flex-direction: column; gap: var(--space-4); }
+.head { display: flex; align-items: baseline; gap: var(--space-3); }
+.numeral { font-size: 36px; line-height: 36px; font-stretch: 75%; font-weight: 500; color: var(--graphite); }
+.name { font-size: 24px; line-height: 30px; font-weight: 600; }
+.ids { display: flex; gap: var(--space-3); font-size: 13px; font-weight: 400; margin-top: 2px; }
+.ids a { color: var(--graphite); }
+.notice { font-size: 14px; color: var(--graphite); border-left: 3px solid var(--rule); padding-left: var(--space-3); }
+.ic50 { font-size: 14px; color: var(--graphite); }
+.guess { font-size: 16px; line-height: 24px; }
+.facts { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-1); font-size: 14px; }
+.notes { font-size: 14px; color: var(--graphite); }

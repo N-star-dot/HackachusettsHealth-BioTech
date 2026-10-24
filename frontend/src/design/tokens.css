@@ -1,0 +1,30 @@
+/* Design tokens (BRIEF section 6). All color lives here — no raw hex in components. */
+:root {
+  --bench: #e6ebe9;     /* page background */
+  --sheet: #f9faf9;     /* notebook surface, popovers */
+  --deck: #d5dcda;      /* Flex deck base */
+  --slot: #c7d0ce;      /* slot recesses */
+  --rule: #c3cbc9;      /* dividers, slider tracks, empty well rings */
+  --ink: #1c2430;       /* text, primary buttons, key marks */
+  --graphite: #5b6573;  /* secondary text, axes, inactive marks */
+  --active: #d2457f;    /* resorufin pink, 100% target activity */
+  --inhibited: #3552a0; /* resazurin blue, 0% target activity */
+  --ok: #2f7d5b;        /* verified */
+  --partial-mark: #c98a12;
+  --partial-text: #8f6200;
+  --flag: #b8382f;      /* not verified, failures */
+
+  --radius-input: 2px;
+  --radius-button: 6px;
+  --radius-deck: 14px;
+  --shadow-pop: 0 6px 20px rgba(28, 36, 48, 0.18);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+}

@@ -39,6 +39,12 @@ class OfflineCacheMiss(RuntimeError):
 _AUTH_PARAMS = frozenset({"api_key", "mailto", "email"})
 
 
+# Params that must NOT affect the cache key: they're per-user auth / politeness and
+# don't change the response body. Stripping them means a keyed and a keyless call for
+# the same data share one cache row.
+_CACHE_KEY_EXCLUDE = frozenset({"api_key", "mailto"})
+
+
 def _request_key(url: str, params: dict[str, Any] | None) -> str:
     items = sorted(
         (k, v) for k, v in (params or {}).items() if k not in _AUTH_PARAMS

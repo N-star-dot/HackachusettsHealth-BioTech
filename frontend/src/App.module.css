@@ -1,0 +1,64 @@
+.app {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+/* A short confirmation that a new run replaced the old one (W1.1). */
+.toast {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--sheet);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-button);
+  font-size: 14px;
+  box-shadow: var(--shadow-pop);
+  z-index: 50;
+}
+
+/* W1.6: one centered page container so the notebook and bench sit together instead of
+ *  pinned to opposite edges with dead space between them. */
+.container {
+  max-width: 1560px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Two columns: notebook (fluid, prose caps itself) + a fixed sticky bench. */
+.columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 520px;
+  gap: var(--space-12);
+  padding: var(--space-8) var(--space-6);
+  align-items: start;
+}
+
+.notebook {
+  max-width: 900px;
+}
+
+.bench {
+  position: sticky;
+  top: var(--space-6);
+}
+
+@media (max-width: 1199px) {
+  .columns { grid-template-columns: minmax(0, 1fr) 440px; gap: var(--space-8); }
+}
+
+@media (max-width: 899px) {
+  .columns { grid-template-columns: 1fr; }
+  .notebook { max-width: none; }
+  .bench { position: static; }
+}
+
+.stages { display: flex; flex-direction: column; gap: var(--space-16); }
+.running { color: var(--graphite); font-size: 14px; }
+.error { color: var(--flag); font-size: 14px; }
+.blocked { display: flex; flex-direction: column; gap: var(--space-3); }
+.blocked h2 { font-size: 24px; line-height: 30px; font-weight: 600; }
+.blocked ul { color: var(--flag); }
+.askDifferent { align-self: flex-start; background: var(--ink); color: var(--sheet); border: none; border-radius: var(--radius-button); padding: var(--space-2) var(--space-4); font-size: 14px; margin-top: var(--space-2); }

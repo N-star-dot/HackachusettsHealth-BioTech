@@ -1,0 +1,20 @@
+.scrim {
+  position: fixed; inset: 0; background: rgba(28, 36, 48, 0.28);
+  display: flex; justify-content: flex-end; z-index: 40;
+}
+.drawer {
+  width: 360px; max-width: 90vw; height: 100%; background: var(--sheet);
+  border-left: 1px solid var(--rule); box-shadow: var(--shadow-pop);
+  padding: var(--space-6); overflow-y: auto; display: flex; flex-direction: column; gap: var(--space-4);
+}
+.head { display: flex; align-items: center; justify-content: space-between; }
+.title { font-size: 18px; font-weight: 600; font-stretch: 112%; }
+.close { background: none; border: none; color: var(--ink); text-decoration: underline; font-size: 14px; }
+.empty { color: var(--graphite); font-size: 14px; }
+.list { display: flex; flex-direction: column; gap: var(--space-4); list-style: none; }
+.item { display: flex; flex-direction: column; gap: var(--space-1); border-bottom: 1px solid var(--rule); padding-bottom: var(--space-3); }
+.question { background: none; border: none; text-align: left; color: var(--ink); font-size: 15px; padding: 0; }
+.question:hover { text-decoration: underline; }
+.meta { color: var(--graphite); font-size: 13px; font-stretch: 75%; }
+.reask { align-self: flex-start; background: none; border: 1px solid var(--rule); border-radius: var(--radius-button); padding: 2px var(--space-3); font-size: 13px; color: var(--ink); }
+.reask:hover { border-color: var(--ink); }

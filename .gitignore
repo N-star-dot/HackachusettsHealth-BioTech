@@ -30,9 +30,16 @@ htmlcov/
 
 # Generated protocol outputs (keep the folder via .gitkeep)
 protocols/*.py
+protocols/whatif/
+
+# Trained model artifacts (regenerate with scripts/train_momentum.py)
+models/*.pkl
+models/metrics.json
 
 # Local SQLite database file (schema is committed, data is not)
 database/app.db
 database/*.db-journal
+database/*.db-wal
+database/*.db-shm
 
 # NOTE: .kiro/ is intentionally NOT ignored. It must be committed per the rules.

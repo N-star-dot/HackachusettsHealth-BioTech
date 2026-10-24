@@ -1,0 +1,38 @@
+.bench { display: flex; flex-direction: column; gap: var(--space-2); }
+
+.deck {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--deck);
+  border-radius: var(--radius-deck);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border-left: 1px solid rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.slot {
+  aspect-ratio: 128 / 85;
+  background: var(--slot);
+  border-radius: var(--radius-input);
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-bottom: 6px;
+}
+.slotLabel {
+  position: absolute; top: 3px; left: 4px;
+  font-size: 12px; line-height: 16px; font-stretch: 75%; font-weight: 500; color: var(--graphite);
+}
+.load { font-size: 11px; font-stretch: 75%; color: var(--ink); }
+
+.tips { outline: 1px solid var(--graphite); }
+.plate { background: var(--sheet); }
+.reservoir { outline: 1px dashed var(--graphite); }
+.trash { opacity: 0.7; }
+
+.caption { font-size: 13px; color: var(--graphite); }
+.legend { list-style: none; padding: 0; margin: 0; font-size: 12px; color: var(--graphite); display: flex; flex-direction: column; gap: 2px; }

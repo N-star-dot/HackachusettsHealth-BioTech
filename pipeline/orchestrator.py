@@ -15,8 +15,14 @@ from backend.contracts import (
     TopicReport,
     UncertaintyReport,
 )
-from backend.stage1_topic import score_topic
-from backend.stage2_design import check_citations, design_experiment
+from backend.stage1_topic import recompute_axes, score_topic
+from backend.stage2_design import check_citations, design_experiment, review_design
+from backend.stage2_design.demo_pairs import (
+    evidence_abstracts_for,
+    get_demo_pair,
+    match_pair,
+    pair_names,
+)
 from backend.stage3_protocol import compile_design, simulate_protocol
 from backend.stage4_uncertainty import plan_next_experiments, run_uncertainty
 from database import get_db
@@ -30,6 +36,7 @@ class PipelineResult:
     sim: SimResult | None
     uncertainty: UncertaintyReport | None
     blocked: bool = False
+    pair: dict | None = None  # {label, compound_chembl_id, target_chembl_id, compound_name, target_name, match}
 
 
 def _safe_title_lookup(pmid: str) -> str | None:
@@ -56,10 +63,10 @@ def run_pipeline(
     target_chembl_id: str | None = None,
 ) -> PipelineResult:
     db = get_db() if persist else None
-    run_id = db.create_run(query) if db else "ephemeral"
+    run_id = run_id or (db.create_run(query) if db else "ephemeral")
 
     # --- stage 1: topic (safety gate inside) ---
-    topic = score_topic(query, weights=weights)
+    topic = score_topic(query, weights=weights, openalex_topic_id=openalex_topic_id)
     if db:
         db.save_report(run_id, "topic", topic)
         db.set_run_status(run_id, "topic")
@@ -86,6 +93,7 @@ def run_pipeline(
     # network error, unresolved PMID) is treated as unverified — conservative and safe.
     design = check_citations(design, lookup_title=_safe_title_lookup)
     if db:
+        db.save_report(run_id, "pair", pair_info)
         db.save_report(run_id, "design", design)
         db.set_run_status(run_id, "design")
 
@@ -96,11 +104,31 @@ def run_pipeline(
         db.save_report(run_id, "sim", sim)
         db.set_run_status(run_id, "sim")
 
-    # --- stage 4: uncertainty + planner ---
+    # --- stage 4: uncertainty, then the planner (saved separately so the dashboard
+    #     reveals the uncertainty numbers immediately; the planner's extra Monte Carlo
+    #     reruns fill in "best next changes" a moment later instead of blocking). ---
     uncertainty = run_uncertainty(design, runs=runs, seed=seed, reader_cv=reader_cv)
+    if db:
+        db.save_report(run_id, "uncertainty", uncertainty)
+        db.set_run_status(run_id, "uncertainty")
+
     uncertainty.next_experiments = plan_next_experiments(design, uncertainty)
     if db:
         db.save_report(run_id, "uncertainty", uncertainty)
+
+    # --- B2.5: Skeptic debate, settled by simulation (empty without GEMINI_API_KEY) ---
+    review = review_design(
+        design, uncertainty.fold_error.p90, runs=runs, seed=seed, reader_cv=reader_cv
+    )
+    if review:
+        design = design.model_copy(update={"review": review})
+        if db:
+            db.save_report(run_id, "design", design)
+
+    # --- B1.5: recompute the four fixed matrix axes now that stages 2-3 have run ---
+    topic = recompute_axes(topic, design, sim)
+    if db:
+        db.save_report(run_id, "topic", topic)
         db.set_run_status(run_id, "done")
 
-    return PipelineResult(run_id, topic, design, sim, uncertainty)
+    return PipelineResult(run_id, topic, design, sim, uncertainty, pair=pair_info)

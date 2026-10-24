@@ -1,4 +1,4 @@
-"""PubMed (NCBI E-utilities) ingest: abstracts for the Designer + PMID checks.
+"""PubMed (NCBI E-utilities) ingest: PMID search, titles, and ABSTRACTS. Owner B.
 
 Free: 3 req/s keyless, 10 req/s with a free key. Cached on first pull.
 
@@ -12,7 +12,8 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from pipeline.ingest.http_cache import cached_get_json
+from database import get_db
+from pipeline.ingest.http_cache import _fetch, _request_key, cached_get_json
 
 _BASE = "https://eutils.ncbi.nlm.nih.gov/entrez/eutils"
 
@@ -60,8 +61,7 @@ def _parse_pmids(body: Any) -> list[str]:
 
 
 def fetch_title(pmid: str) -> str | None:
-    """Return the article title for a PMID, or None if it doesn't resolve.
-    Used by the stage-2 citation checker."""
+    """Article title for a PMID, or None if it doesn't resolve."""
     params = {"db": "pubmed", "id": pmid, "retmode": "json", **_key_params()}
     body = cached_get_json("pubmed", f"{_BASE}/esummary.fcgi", params=params)
     return _parse_title(body, pmid)

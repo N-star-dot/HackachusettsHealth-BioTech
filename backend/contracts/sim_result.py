@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from backend.contracts.common import Source
+
 
 class SimulatorInfo(BaseModel):
     passed: bool = Field(..., alias="pass")
@@ -24,6 +26,7 @@ class CostBreakdown(BaseModel):
     compound_uL: float = Field(..., ge=0)
     plates: int = Field(..., ge=0)
     robot_steps: int = Field(..., ge=0)
+    source: "Source | None" = None  # B0.5: simulator (counted) or assumed (formula)
 
 
 class ProtocolStep(BaseModel):
@@ -32,6 +35,27 @@ class ProtocolStep(BaseModel):
     uL: float | None = None
     labware: str | None = None
     well: str | None = None
+    # structured fields for the dashboard replay (B0.4), all optional with defaults
+    level: int = 0
+    text: str = ""
+    slot: str | None = None
+    source: "StepLocation | None" = None
+    dest: "StepLocation | None" = None
+    repetitions: int | None = None
+
+
+class StepLocation(BaseModel):
+    slot: str | None = None
+    well: str | None = None
+    labware: str | None = None
+
+
+class DeckSlot(BaseModel):
+    slot: str
+    load_name: str
+    display_name: str
+    role: str = Field(..., description="'tips' | 'plate' | 'reservoir' | 'trash'.")
+    contents: dict[str, str] = Field(default_factory=dict)
 
 
 class SimResult(BaseModel):
@@ -40,3 +64,7 @@ class SimResult(BaseModel):
     simulator: SimulatorInfo
     cost: CostBreakdown
     steps: list[ProtocolStep] = Field(default_factory=list)
+    deck: list[DeckSlot] = Field(default_factory=list)  # B0.4
+
+
+ProtocolStep.model_rebuild()

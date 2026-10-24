@@ -1,0 +1,200 @@
+{
+  "CHEMBL554": {
+    "14684309": {
+      "pmid": "14684309",
+      "title": "Synthesis and SAR of potent EGFR/erbB2 dual inhibitors.",
+      "abstract": "A series of 6-alkoxy-4-anilinoquinazoline compounds was prepared and evaluated for in vitro inhibition of the erbB2 and EGFR kinase activity. The IC(50) values of the best compounds were below 0.10 uM. Further, several of these compounds inhibit the growth of erbB2 and EGFR over-expressing tumor cell lines at concentrations below 1 uM.",
+      "year": 2004,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1146682"
+    },
+    "16777410": {
+      "pmid": "16777410",
+      "title": "Optimization and SAR for dual ErbB-1/ErbB-2 tyrosine kinase inhibition in the 6-furanylquinazoline series.",
+      "abstract": "Synthetic modifications on a 6-furanylquinazoline scaffold to optimize the dual ErbB-1/ErbB-2 tyrosine kinase inhibition afforded consistent SAR whereby a 4-(3-fluorobenzyloxy)-3-haloanilino provided the best enzyme potency and cellular selectivity. Changes made to the 6-furanyl group had little impact on the enzyme activity, but appeared to dramatically affect the cellular efficacy. The discovery of lapatinib emerged from this work.",
+      "year": 2006,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1149340"
+    },
+    "19888761": {
+      "pmid": "19888761",
+      "title": "Discovery of a novel Her-1/Her-2 dual tyrosine kinase inhibitor for the treatment of Her-1 selective inhibitor-resistant non-small cell lung cancer.",
+      "abstract": "A novel series of (S)-1-acryloyl-N-[4-(arylamino)-7-(alkoxy)quinazolin-6-yl]pyrrolidine-2-carboxamides were synthesized and evaluated as Her-1/Her-2 dual inhibitors. In contrast to the Her-1 selective inhibitors, our novel compounds are irreversible inhibitors of Her-1 and Her-2 tyrosine kinases with the potential to overcome clinically relevant, mutation-induced drug resistance. The selected compounds (19c, 19d) showed excellent EGFR inhibition activity even toward the T790M mutation of Her-1 tyrosine kinase with excellent selectivity. The excellent pharmacokinetic profiles of these compounds in rats and their robust in vivo efficacy in an A431 xenograft model clearly demonstrate that they merit further investigation as novel therapeutic agents for EGFR-targeting treatment of solid tumors, especially Her-1 selective inhibitor-resistant non-small cell lung cancer.",
+      "year": 2009,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL1154692"
+    },
+    "20346655": {
+      "pmid": "20346655",
+      "title": "Imidazo[2,1-b]thiazoles: multitargeted inhibitors of both the insulin-like growth factor receptor and members of the epidermal growth factor family of receptor tyrosine kinases.",
+      "abstract": "The design and enzyme activities of a novel class of imidazo[2,1-b]thiazoles is presented.",
+      "year": 2010,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1156213"
+    },
+    "20817523": {
+      "pmid": "20817523",
+      "title": "Substituted 4-amino-1H-pyrazolo[3,4-d]pyrimidines as multi-targeted inhibitors of insulin-like growth factor-1 receptor (IGF1R) and members of ErbB-family receptor kinases.",
+      "abstract": "This Letter describes the lead discovery, optimization, and biological characterization of a series of substituted 4-amino-1H-pyrazolo[3,4-d]pyrimidines as potent inhibitors of IGF1R, EGFR, and ErbB2. The leading compound 11 showed an IGF1R IC(50) of 12 nM, an EGFR (L858R) IC(50) of 31 nM, and an ErbB2 IC(50) of 11 nM, potent activity in cellular functional and anti-proliferation assays, as well as activity in an in vivo pharmacodynamic assay.",
+      "year": 2010,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1255185"
+    },
+    "21080629": {
+      "pmid": "21080629",
+      "title": "Novel chimeric histone deacetylase inhibitors: a series of lapatinib hybrides as potent inhibitors of epidermal growth factor receptor (EGFR), human epidermal growth factor receptor 2 (HER2), and histone deacetylase activity.",
+      "abstract": "Reversible lysine-specific acetylation has been described as an important posttranslational modification, regulating chromatin structure and transcriptional activity in the case of core histone proteins. Histone deacetylases (HDAC) are considered as a promising target for anticancer drug development, with 2a as pan-HDAC inhibitor approved for cutanous T-cell lymphoma therapy and several other HDAC inhibitors currently in preclinical and clinical development. Protein kinases are a well-established target for cancer therapy with the EGFR/HER2 inhibitor 5 approved for treatment of advanced, HER2 positive breast cancer as a prominent example. In the present report, we present a novel strategy for cancer drug development by combination of EGFR/HER2 kinase and HDAC inhibitory activity in one molecule. By combining the structural features of 5 with an (E)-3-(aryl)-N-hydroxyacrylamide motif known from HDAC inhibitors like 1 or 3, we obtained selective inhibitors for both targets with potent cellular activity (target inhibition and cytotoxicity) of selected compounds 6a and 6c. By combining two distinct pharmacologically properties in one molecule, we postulate a broader activity spectrum and less likelihood of drug resistance in cancer patients.",
+      "year": 2010,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL1629443"
+    },
+    "22169601": {
+      "pmid": "22169601",
+      "title": "Novel inhibitors of epidermal growth factor receptor: (4-(Arylamino)-7H-pyrrolo[2,3-d]pyrimidin-6-yl)(1H-indol-2-yl)methanones and (1H-indol-2-yl)(4-(phenylamino)thieno[2,3-d]pyrimidin-6-yl)methanones.",
+      "abstract": "Several members of the quinazoline class of known tyrosine kinase inhibitors are approved anticancer agents, often showing selectivity for receptors of the HER/ErbB-family. Combining structural elements of this class with the bisindolylmethanone-structure led to a series of novel compounds. These compounds inhibited EGFR in the nanomolar range. Moreover, inhibition of EGFR autophosphorylation in intact A431 cells was shown, with IC(50) values ranging form 0.3-1\u03bcM for compound 42, and 0.1-0.3\u03bcM for 45. In a panel of 42 human tumor cell lines the sensitivity profile of the novel compounds was shown to be similar to that of the quinazoline class of tyrosine kinase inhibitors lapatinib and erlotinib (Tarceva\u00ae).",
+      "year": 2012,
+      "journal": "Bioorg Med Chem",
+      "document_chembl_id": "CHEMBL1926681"
+    },
+    "24355130": {
+      "pmid": "24355130",
+      "title": "Identification of quinones as HER2 inhibitors for the treatment of trastuzumab resistant breast cancer.",
+      "abstract": "HER2 overexpression is associated with aggressive breast cancer with high recurrence rate and poor patient prognosis. Treatment of HER2 overexpressing patients with the HER2 targeting therapy trastuzumab results in acquired resistance within a year. The HER2/EGFR dual kinase inhibitor lapatinib was shown to inhibit some trastuzumab resistant breast cancer cell lines and is currently in clinical trials. Our group has found two new quinone compounds that show excellent inhibition of breast tumor cells expressing HER2 or the trastuzumab resistant HER2 oncogenic isoform, HER2\u039416. Compound 4 ((1R,2S,3S)-1,2,3,5,8-pentahydroxy-1,2,3,4-tetrahydroanthracene-9,10-dione) and compound 5 (5,8-dihydroxy-2,3-bis(hydroxymethyl)naphthalene-1,4-dione) showed sub-micromolar inhibition potency against these cell lines. These compounds also inhibit auto-phosphorylation of the Y1248 and Y1068 residues of HER2 and EGFR, respectively.",
+      "year": 2014,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL3098113"
+    }
+  },
+  "CHEMBL10": {
+    "9873604": {
+      "pmid": "9873604",
+      "title": "Pyrroles and other heterocycles as inhibitors of p38 kinase.",
+      "abstract": "Investigation of furans, pyrroles and pyrazolones identified 3-pyridyl-2,5-diaryl-pyrroles as potent, orally bioavailable inhibitors of p38 kinase. 3-(4-pyridyl-2-(4-fluoro-phenyl)-5-(4-methylsulfinylphenyl)-pyrrol e (L-167307) reduces secondary paw swelling in the rat adjuvant arthritis model: ID50 = 7.4 mg/kg/b.i.d.",
+      "year": 1998,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1130598"
+    },
+    "10999468": {
+      "pmid": "10999468",
+      "title": "1-Phenyl-5-pyrazolyl ureas: potent and selective p38 kinase inhibitors.",
+      "abstract": "Inhibitors of the MAP kinase p38 are potentially useful for the treatment of arthritis and osteoporosis. Several 2,3-dichlorophenyl ureas were identified as small-molecule inhibitors of p38 by a combinatorial chemistry effort. Optimization for cellular potency led to the discovery of a new class of potent and selective p38 kinase inhibitors, exemplified by the 1-phenyl-5-pyrazolyl urea 7 (IC50 = 13 nM).",
+      "year": 2000,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1133482"
+    },
+    "11354358": {
+      "pmid": "11354358",
+      "title": "Phenoxypyrimidine inhibitors of p38alpha kinase: synthesis and statistical evaluation of the p38 inhibitory potencies of a series of 1-(piperidin-4-yl)-4-(4-fluorophenyl)-5-(2-phenoxypyrimidin-4-yl) imidazoles.",
+      "abstract": "As a continuation of our work with 1,4,5 substituted imidazole inhibitors of p38alpha, we report a series of 1-(4-piperidinyl)-4-(4-fluorophenyl)-5-(2-phenoxy-4-pyrimidinyl) imidazoles related to 7. The compounds have IC50's for inhibition of p38alpha ranging from 6.0 to 650nM. Statistical analysis of the p38beta inhibitor potencies shows a correlation of IC50's with the electron donating strength of low molecular weight substituents.",
+      "year": 2001,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1134753"
+    },
+    "12361396": {
+      "pmid": "12361396",
+      "title": "Imidazole inhibitors of cytokine release: probing substituents in the 2 position.",
+      "abstract": "Novel 2,4,5-trisubstituted imidazole derivatives were prepared as potential anticytokine agents. Thirty-seven compounds were tested on their ability to inhibit the release of tumor necrosis factor-alpha (TNF-alpha) and interleukin-1beta (IL-1beta) from peripheral blood mononuclear cells (PBMC) or human whole blood. SARs (structure activity relationships) for substituents at the 4 and 5 position of the imidazole core were similar to those described for other inhibitors of cytokine release and p38 MAP (mitogen-activated protein) kinase. Starting from benzylsulfanyl imidazole 2b (IC(50) p38, 4.0 microM; TNF-alpha, 1.1 microM; IL-1beta, 0.38 microM), the contribution of substituents at the 2 position to enzyme inhibitory and cellular activity of test compounds was investigated. This strategy led to the identification of compound 2q (IC(50) p38, 0.63 microM; TNF-alpha, 0.90 microM; IL-1beta, 0.04 microM), which was 6-10 times more potent than the initial lead 2b with respect to inhibition of p38 and IL-1beta release and equipotently inhibited TNF-alpha release.",
+      "year": 2002,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL1135626"
+    },
+    "15454232": {
+      "pmid": "15454232",
+      "title": "Novel, potent and selective anilinoquinazoline and anilinopyrimidine inhibitors of p38 MAP kinase.",
+      "abstract": "SAR studies led to the identification of 4-(3-benzoylamino-6-methyl-anilino)quinazolines as potent and selective inhibitors of p38 MAP kinase. Further optimisation led to the identification of a series of 4-(3-benzoylamino-6-methyl-anilino)pyrimidines as potent inhibitors of the p38 MAP kinase signalling pathway in vitro and in vivo.",
+      "year": 2004,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1138000"
+    },
+    "17181176": {
+      "pmid": "17181176",
+      "title": "Design, synthesis, and biological evaluation of phenylamino-substituted 6,11-dihydro-dibenzo[b,e]oxepin-11-ones and dibenzo[a,d]cycloheptan-5-ones: novel p38 MAP kinase inhibitors.",
+      "abstract": "The pathogenesis of chronic inflammatory diseases is promoted by various pro-inflammatory cytokines. p38 MAP kinase seems to be a valid target as it controls proinflammatory cytokine levels on both transcriptional and translational levels. Starting from benzophenone-type inhibitors, a rigidisation strategy lead to 3-amino-6,11-dihydro-dibenzo[b,e]thiepin-11-one, phenylamino-substituted 6,11-dihydro-dibenzo[b,e]oxepin-11-ones, and dibenzo[a,d]cyclohepten-5-ones. Synthesis, p38 inhibition, and CYP-inhibition of selected compounds are described.",
+      "year": 2006,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL1138861"
+    },
+    "15990304": {
+      "pmid": "15990304",
+      "title": "The molecular basis for coxib inhibition of p38alpha MAP kinase.",
+      "abstract": "In this work, we present the results of two combined approaches, molecular docking and comparative molecular field analysis (CoMFA), to propose how the selective cyclooxygenase-2 inhibitor celecoxib could act as a p38 mitogen-activated protein (MAP) kinase inhibitor. The docking analysis revealed why celecoxib has a less favorable binding energy (DeltaG= -12.4kcal/mol) than the selective p38 MAP kinase (p38 MAPK) inhibitor, SB203580 (DeltaG= -22.2kcal/mol). The CoMFA results revealed unfavorable steric effects that can be related to the predicted lower p38 MAP kinase inhibitory activity of celecoxib. Additionally, FlexX and CoMFA results also suggested that etoricoxib, another selective COX-2 inhibitor, could inhibit p38 MAP kinase.",
+      "year": 2005,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1140368"
+    },
+    "17323937": {
+      "pmid": "17323937",
+      "title": "From five- to six-membered rings: 3,4-diarylquinolinone as lead for novel p38MAP kinase inhibitors.",
+      "abstract": "In this study we describe the design, synthesis, and biological evaluation of 3-(4-fluorophenyl)-4-pyridin-4-ylquinoline-2(1H)-one (5) as a new inhibitor of MAPK with a p38alphaMAPK IC50 of 1.8 muM. By keeping the common vicinal pyridine/4-F-phenyl pharmacophore, such as in prototypical imidazole 20 or isoxazole 13 but in 5 connected to the six-membered quinoline core, we were particularly interested in comparing biological activity, details of molecular geometry, and different binding modes of these compounds. Compounds 20 and 13 were active both in the p38alpha- and JNK3-assay, whereas 5 was selective for p38alpha, with no JNK3 inhibition. By comparing the X-ray structures of the compounds, we found a significantly larger distance between the pyridine and the 4-F-phenyl moiety in five-membered core structures relevant for ligand-protein interactions. Molecular modeling studies support the results based on differences in the ATP pockets of p38alpha and JNK3. Because most five-membered core based p38alpha inhibitors show also activity for JNK3, compound 5 is an interesting lead for selective p38alpha inhibitors.",
+      "year": 2007,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL1142955"
+    }
+  },
+  "CHEMBL221959": {
+    "16934457": {
+      "pmid": "16934457",
+      "title": "Development of pyrimidine-based inhibitors of Janus tyrosine kinase 3.",
+      "abstract": "A new class of pyrimidine-based Janus tyrosine kinase 3 (JAK3) inhibitors are described. Many of these inhibitors showed low nanomolar activity against JAK3.",
+      "year": 2006,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1139695"
+    },
+    "14593182": {
+      "pmid": "14593182",
+      "title": "Prevention of organ allograft rejection by a specific Janus kinase 3 inhibitor.",
+      "abstract": "Because of its requirement for signaling by multiple cytokines, Janus kinase 3 (JAK3) is an excellent target for clinical immunosuppression. We report the development of a specific, orally active inhibitor of JAK3, CP-690,550, that significantly prolonged survival in a murine model of heart transplantation and in cynomolgus monkeys receiving kidney transplants. CP-690,550 treatment was not associated with hypertension, hyperlipidemia, or lymphoproliferative disease. On the basis of these preclinical results, we believe JAK3 blockade by CP-690,550 has potential for therapeutically desirable immunosuppression in human organ transplantation and in other clinical settings.",
+      "year": 2003,
+      "journal": "Science",
+      "document_chembl_id": "CHEMBL1152817"
+    },
+    "19762238": {
+      "pmid": "19762238",
+      "title": "Phenylaminopyrimidines as inhibitors of Janus kinases (JAKs).",
+      "abstract": "A series of phenylaminopyrimidines has been identified as inhibitors of Janus kinases (JAKs). Development of this initial series led to the potent JAK2/JAK1 inhibitor CYT387 (N-(cyanomethyl)-4-[2-[[4-(4-morpholinyl)phenyl]amino]-4-pyrimidinyl]-benzamide). Details of synthesis and SAR studies of these compounds are reported.",
+      "year": 2009,
+      "journal": "Bioorg Med Chem Lett",
+      "document_chembl_id": "CHEMBL1154287"
+    },
+    "21105711": {
+      "pmid": "21105711",
+      "title": "Discovery of CP-690,550: a potent and selective Janus kinase (JAK) inhibitor for the treatment of autoimmune diseases and organ transplant rejection.",
+      "abstract": "There is a critical need for safer and more convenient treatments for organ transplant rejection and autoimmune disorders such as rheumatoid arthritis. Janus tyrosine kinases (JAK1, JAK3) are expressed in lymphoid cells and are involved in the signaling of multiple cytokines important for various T cell functions. Blockade of the JAK1/JAK3-STAT pathway with a small molecule was anticipated to provide therapeutic immunosuppression/immunomodulation. The Pfizer compound library was screened against the catalytic domain of JAK3 resulting in the identification of a pyrrolopyrimidine-based series of inhibitors represented by CP-352,664 (2a). Synthetic analogues of 2a were screened against the JAK enzymes and evaluated in an IL-2 induced T cell blast proliferation assay. Select compounds were evaluated in rodent efficacy models of allograft rejection and destructive inflammatory arthritis. Optimization within this chemical series led to identification of CP-690,550 1, a potential first-in-class JAK inhibitor for treatment of autoimmune diseases and organ transplant rejection.",
+      "year": 2010,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL1629452"
+    },
+    "21155605": {
+      "pmid": "21155605",
+      "title": "Identification of a potent Janus kinase 3 inhibitor with high selectivity within the Janus kinase family.",
+      "abstract": "We describe a synthetic approach toward the rapid modification of phenyl-indolyl maleimides and the discovery of potent Jak3 inhibitor 1 with high selectivity within the Jak kinase family. We provide a rationale for this unprecedented selectivity based on the X-ray crystal structure of an analogue of 1 bound to the ATP-binding site of Jak3. While equally potent compared to the Pfizer pan Jak inhibitor CP-690,550 (2) in an enzymatic Jak3 assay, compound 1 was found to be 20-fold less potent in cellular assays measuring cytokine-triggered signaling through cytokine receptors containing the common \u03b3 chain (\u03b3C). Contrary to compound 1, compound 2 inhibited Jak1 in addition to Jak3. Permeability and cellular concentrations of compounds 1 and 2 were similar. As Jak3 always cooperates with Jak1 for signaling, we speculate that specific inhibition of Jak3 is not sufficient to efficiently block \u03b3C cytokine signal transduction required for strong immunosuppression.",
+      "year": 2011,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL1649080"
+    },
+    "22087750": {
+      "pmid": "22087750",
+      "title": "Discovery of potent and highly selective thienopyridine Janus kinase 2 inhibitors.",
+      "abstract": "Developing Janus kinase 2 (Jak2) inhibitors has become a significant focus for small molecule drug discovery programs in recent years due to the identification of a Jak2 gain-of-function mutation in the majority of patients with myeloproliferative disorders (MPD). Here, we describe the discovery of a thienopyridine series of Jak2 inhibitors that culminates with compounds showing 100- to >500-fold selectivity over the related Jak family kinases in enzyme assays. Selectivity for Jak2 was also observed in TEL-Jak cellular assays, as well as in cytokine-stimulated peripheral blood mononuclear cell (PBMC) and whole blood assays. X-ray cocrystal structures of 8 and 19 bound to the Jak2 kinase domain aided structure-activity relationship efforts and, along with a previously reported small molecule X-ray cocrystal structure of the Jak1 kinase domain, provided structural rationale for the observed high levels of Jak2 selectivity.",
+      "year": 2011,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL1938231"
+    },
+    "23214979": {
+      "pmid": "23214979",
+      "title": "3-Amido pyrrolopyrazine JAK kinase inhibitors: development of a JAK3 vs JAK1 selective inhibitor and evaluation in cellular and in vivo models.",
+      "abstract": "The Janus kinases (JAKs) are involved in multiple signaling networks relevant to inflammatory diseases, and inhibition of one or more members of this class may modulate disease activity or progression. We optimized a new inhibitor scaffold, 3-amido-5-cyclopropylpyrrolopyrazines, to a potent example with reasonable kinome selectivity, including selectivity for JAK3 versus JAK1, and good biopharmaceutical properties. Evaluation of this analogue in cellular and in vivo models confirmed functional selectivity for modulation of a JAK3/JAK1-dependent IL-2 stimulated pathway over a JAK1/JAK2/Tyk2-dependent IL-6 stimulated pathway.",
+      "year": 2013,
+      "journal": "J Med Chem",
+      "document_chembl_id": "CHEMBL2321829"
+    },
+    "24398382": {
+      "pmid": "24398382",
+      "title": "Linear propargylic alcohol functionality attached to the indazole-7-carboxamide as a JAK1-specific linear probe group.",
+      "abstract": "Selective inhibition of JAK1 has recently been proposed as an appropriate therapeutic rationale for the treatment of inflammatory diseases such as rheumatoid arthritis (RA). In this study, through pairwise comparison and 3D alignment of the JAK isozyme structures bound to the same inhibitor molecule, we reasoned that an alkynol functionality would serve as an isozyme-specific probe group, which would enable the resulting inhibitor to differentiate the ATP-binding site of JAK1 from those of other isozymes. The 3-alkynolyl-5-(4'-indazolyl)indazole-7-carboxamide derivatives were thus prepared, and in vitro evaluation of their inhibitory activity against the JAK isozymes revealed that the propargyl alcohol functionality endowed the 5-(4'-indazolyl)indazole-7-carboxamide scaffold with JAK1 selectivity over other JAK isozymes, particularly JAK2.",
+      "year": 2014,
+      "journal": "Bioorg Med Chem",
+      "document_chembl_id": "CHEMBL3102787"
+    }
+  }
+}
