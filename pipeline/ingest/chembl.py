@@ -143,6 +143,26 @@ def ic50_activities(target_chembl_id: str, limit: int = 100) -> list[dict]:
     return _fetch_clean_activities(target_chembl_id, max_pages=1, page_size=limit)
 
 
+def fetch_document(document_chembl_id: str) -> dict | None:
+    """Fetch a ChEMBL document's bibliographic metadata (cached).
+
+    Returns {document_chembl_id, pubmed_id, title, year, journal} or None if the record
+    has no PubMed id (we can't fetch an abstract for it, so it's useless to the evidence
+    set). Document fetch only — stays within the stage-2 ChEMBL scope.
+    """
+    body = cached_get_json("chembl", f"{_BASE}/document/{document_chembl_id}.json")
+    pubmed_id = body.get("pubmed_id")
+    if not pubmed_id:
+        return None
+    return {
+        "document_chembl_id": document_chembl_id,
+        "pubmed_id": str(pubmed_id),
+        "title": body.get("title"),
+        "year": body.get("year"),
+        "journal": body.get("journal"),
+    }
+
+
 def prior_ic50_nM(target_chembl_id: str, molecule_chembl_id: str) -> dict | None:
     """Starting-guess prior for one SPECIFIC (target, compound) pair, paper-collapsed.
 

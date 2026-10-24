@@ -11,12 +11,26 @@ import json
 from pathlib import Path
 
 _DEMO_PATH = Path(__file__).resolve().parents[2] / "data" / "demo" / "demo_pairs.json"
+_EVIDENCE_PATH = Path(__file__).resolve().parents[2] / "data" / "demo" / "evidence.json"
 
 
 def load_demo_pairs() -> list[dict]:
     if not _DEMO_PATH.exists():
         return []
     return json.loads(_DEMO_PATH.read_text())
+
+
+def load_evidence() -> dict[str, dict]:
+    """compound_chembl_id -> {pmid -> {pmid, title, abstract, ...}}. Empty if not built."""
+    if not _EVIDENCE_PATH.exists():
+        return {}
+    return json.loads(_EVIDENCE_PATH.read_text())
+
+
+def evidence_abstracts_for(compound_chembl_id: str) -> dict[str, str]:
+    """pmid -> abstract text for one compound (what the checker needs). Empty if absent."""
+    ev = load_evidence().get(compound_chembl_id, {})
+    return {pmid: rec["abstract"] for pmid, rec in ev.items()}
 
 
 def get_demo_pair(compound_chembl_id: str | None = None) -> dict | None:

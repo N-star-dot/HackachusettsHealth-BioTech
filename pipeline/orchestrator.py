@@ -17,7 +17,7 @@ from backend.contracts import (
 )
 from backend.stage1_topic import score_topic
 from backend.stage2_design import check_citations, design_experiment
-from backend.stage2_design.demo_pairs import get_demo_pair
+from backend.stage2_design.demo_pairs import evidence_abstracts_for, get_demo_pair
 from backend.stage3_protocol import compile_design, simulate_protocol
 from backend.stage4_uncertainty import plan_next_experiments, run_uncertainty
 from database import get_db
@@ -58,10 +58,11 @@ def run_pipeline(
 
     # --- stage 2: design + citation check ---
     # Deterministic designer builds from a real demo pair (offline); the checker then
-    # verifies each claim against that pair's own ChEMBL records.
+    # verifies each claim against that pair's own ChEMBL records and frozen abstracts.
     pair = get_demo_pair()
     design = design_experiment()
-    design = check_citations(design, pair=pair)
+    evidence = evidence_abstracts_for(design.assay.compound_chembl_id)
+    design = check_citations(design, pair=pair, evidence_abstracts=evidence)
     if db:
         db.save_report(run_id, "design", design)
         db.set_run_status(run_id, "design")
