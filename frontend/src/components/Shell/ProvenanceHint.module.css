@@ -1,0 +1,7 @@
+.hint {
+  display: flex; align-items: center; gap: var(--space-3);
+  padding: var(--space-2) var(--space-6);
+  font-size: 13px; color: var(--graphite);
+  border-bottom: 1px solid var(--rule); background: var(--sheet);
+}
+.close { margin-left: auto; background: none; border: none; color: var(--ink); text-decoration: underline; font-size: 13px; }

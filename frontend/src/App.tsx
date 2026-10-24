@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { StartScreen } from "./components/Shell/StartScreen";
 import { TopBar } from "./components/Shell/TopBar";
 import { TryAnother } from "./components/Shell/TryAnother";
+import { ProvenanceHint } from "./components/Shell/ProvenanceHint";
 import { HistoryDrawer } from "./components/Shell/HistoryDrawer";
 import { Banner } from "./components/Shell/Banner";
 import { DeckPlaceholder } from "./components/Bench/DeckPlaceholder";
@@ -148,6 +149,8 @@ export function App() {
         status={status}
         hasRun={!!run}
       />
+
+      {(run || isRunning) && <ProvenanceHint />}
 
       {toast && (
         <div className={styles.toast} role="status">
