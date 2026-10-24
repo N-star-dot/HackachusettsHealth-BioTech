@@ -1,7 +1,30 @@
 # Dashboard (stage 5) — owner C
 
-This folder holds the researcher-facing UI. Stack is your call (React/Vite recommended;
-Streamlit is a fast alternative). The backend is ready — point the frontend at it.
+The researcher-facing UI: React 18 + Vite + TypeScript. Visual design lives in a custom design system
+tokens for "Hackachusetts Research Dashboard"; colors and type are mirrored as tokens at
+the top of `src/styles.css`.
+
+## Run it
+```bash
+cd frontend
+npm install
+npm run dev        # http://localhost:5173
+```
+- **Mocks** (default, top-right switch): loads `../mocks/*.json`, no backend needed.
+- **Live API**: calls the FastAPI backend through Vite's `/api` proxy to `127.0.0.1:8000`,
+  and reruns `POST /api/uncertainty` as the what-if sliders move.
+
+`npm run typecheck` type-checks; `npm run build` writes `dist/`.
+
+## Layout
+- `src/types.ts` — TypeScript mirrors of `backend/contracts`. Update when a contract changes.
+- `src/api.ts` — mock loader and API calls.
+- `src/components/Sourced.tsx` — the source-on-hover wrapper. Wrap every displayed number in it;
+  a number with no source renders red.
+- `ViabilityMatrix`, `TopicPanel`, `WhatIf`, `RunReplay`, `SidePanels` (run cost, evidence).
+
+The replay falls back to demo steps generated from the design when `SimResult.steps` has
+fewer than two entries (the mock has one); it is labelled "Demo steps from design".
 
 ## Backend contract
 Run the API:
