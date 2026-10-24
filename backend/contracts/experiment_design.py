@@ -62,9 +62,39 @@ class Volumes(BaseModel):
 
 
 class RationaleItem(BaseModel):
+    """One literature claim supporting the design. Every claim must be mechanically
+    checkable: it points at a specific piece of evidence (a ChEMBL activity record or a
+    verbatim abstract quote) that the deterministic checker can verify.
+
+    Fields are additive with defaults so pre-existing mocks still validate.
+    """
+
     claim: str
-    pmid: str
-    verified: bool = False
+    pmid: str = ""
+    evidence_type: str = Field(
+        default="chembl_activity",
+        description="'chembl_activity' or 'abstract_quote'.",
+    )
+    evidence_id: str = Field(
+        default="",
+        description="ChEMBL activity id (chembl_activity) or the PMID (abstract_quote).",
+    )
+    quote: str | None = Field(
+        default=None, description="Verbatim sentence copied from the cited abstract."
+    )
+    status: str = Field(
+        default="unverified",
+        description="'verified', 'partial', or 'unverified' — set by the checker.",
+    )
+    reason: str | None = Field(default=None, description="Why it isn't fully verified.")
+    verified: bool = Field(
+        default=False, description="Kept for back-compat; equals (status == 'verified')."
+    )
+
+    @model_validator(mode="after")
+    def _sync_verified(self) -> "RationaleItem":
+        object.__setattr__(self, "verified", self.status == "verified")
+        return self
 
 
 class ExperimentDesign(BaseModel):

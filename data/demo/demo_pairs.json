@@ -55,6 +55,134 @@
         "CHEMBL5446079",
         "CHEMBL5543120",
         "CHEMBL5647683"
+      ],
+      "papers": [
+        {
+          "document_chembl_id": "CHEMBL1146682",
+          "activity_id": 190222,
+          "value_nM": 8.91,
+          "pchembl_value": 8.05
+        },
+        {
+          "document_chembl_id": "CHEMBL1149340",
+          "activity_id": 1766835,
+          "value_nM": 10.0,
+          "pchembl_value": 8.0
+        },
+        {
+          "document_chembl_id": "CHEMBL1154692",
+          "activity_id": 2943659,
+          "value_nM": 36.31,
+          "pchembl_value": 7.44
+        },
+        {
+          "document_chembl_id": "CHEMBL1156213",
+          "activity_id": 3240783,
+          "value_nM": 100.0,
+          "pchembl_value": 7.0
+        },
+        {
+          "document_chembl_id": "CHEMBL1255185",
+          "activity_id": 3505083,
+          "value_nM": 141.25,
+          "pchembl_value": 6.85
+        },
+        {
+          "document_chembl_id": "CHEMBL1629443",
+          "activity_id": 5112221,
+          "value_nM": 4.47,
+          "pchembl_value": 8.35
+        },
+        {
+          "document_chembl_id": "CHEMBL1926681",
+          "activity_id": 7980806,
+          "value_nM": 60.26,
+          "pchembl_value": 7.22
+        },
+        {
+          "document_chembl_id": "CHEMBL3098113",
+          "activity_id": 13868694,
+          "value_nM": 41.69,
+          "pchembl_value": 7.38
+        },
+        {
+          "document_chembl_id": "CHEMBL3352165",
+          "activity_id": 15130273,
+          "value_nM": 2.69,
+          "pchembl_value": 8.57
+        },
+        {
+          "document_chembl_id": "CHEMBL3745647",
+          "activity_id": 16416987,
+          "value_nM": 537.03,
+          "pchembl_value": 6.27
+        },
+        {
+          "document_chembl_id": "CHEMBL3853296",
+          "activity_id": 16666098,
+          "value_nM": 16.98,
+          "pchembl_value": 7.77
+        },
+        {
+          "document_chembl_id": "CHEMBL3870325",
+          "activity_id": 16811393,
+          "value_nM": 23.99,
+          "pchembl_value": 7.62
+        },
+        {
+          "document_chembl_id": "CHEMBL4325914",
+          "activity_id": 18945185,
+          "value_nM": 32.36,
+          "pchembl_value": 7.49
+        },
+        {
+          "document_chembl_id": "CHEMBL4627322",
+          "activity_id": 20708050,
+          "value_nM": 12.88,
+          "pchembl_value": 7.89
+        },
+        {
+          "document_chembl_id": "CHEMBL4715878",
+          "activity_id": 22853639,
+          "value_nM": 95.5,
+          "pchembl_value": 7.02
+        },
+        {
+          "document_chembl_id": "CHEMBL5214889",
+          "activity_id": 24959145,
+          "value_nM": 28.84,
+          "pchembl_value": 7.54
+        },
+        {
+          "document_chembl_id": "CHEMBL5360595",
+          "activity_id": 25620619,
+          "value_nM": 10.96,
+          "pchembl_value": 7.96
+        },
+        {
+          "document_chembl_id": "CHEMBL5445981",
+          "activity_id": 25755711,
+          "value_nM": 79432.82,
+          "pchembl_value": 4.1
+        },
+        {
+          "document_chembl_id": "CHEMBL5446079",
+          "activity_id": 25755868,
+          "value_nM": 9.12,
+          "pchembl_value": 8.04
+        },
+        {
+          "document_chembl_id": "CHEMBL5543120",
+          "activity_id": 25979075,
+          "value_nM": 14.13,
+          "pchembl_value": 7.85
+        },
+        {
+          "document_chembl_id": "CHEMBL5647683",
+          "activity_id": 26212438,
+          "value_nM": 15.14,
+          "pchembl_value": 7.82
+        }
       ]
     },
     "activity_ids": [
@@ -151,6 +279,104 @@
         "CHEMBL1773061",
         "CHEMBL1799962",
         "CHEMBL1909046"
+      ],
+      "papers": [
+        {
+          "document_chembl_id": "CHEMBL1130598",
+          "activity_id": 706787,
+          "value_nM": 38.9,
+          "pchembl_value": 7.41
+        },
+        {
+          "document_chembl_id": "CHEMBL1133482",
+          "activity_id": 1181421,
+          "value_nM": 19.95,
+          "pchembl_value": 7.7
+        },
+        {
+          "document_chembl_id": "CHEMBL1134753",
+          "activity_id": 1170935,
+          "value_nM": 47.86,
+          "pchembl_value": 7.32
+        },
+        {
+          "document_chembl_id": "CHEMBL1135626",
+          "activity_id": 45892,
+          "value_nM": 288.4,
+          "pchembl_value": 6.54
+        },
+        {
+          "document_chembl_id": "CHEMBL1138000",
+          "activity_id": 1454924,
+          "value_nM": 10.0,
+          "pchembl_value": 8.0
+        },
+        {
+          "document_chembl_id": "CHEMBL1138861",
+          "activity_id": 1800072,
+          "value_nM": 67.61,
+          "pchembl_value": 7.17
+        },
+        {
+          "document_chembl_id": "CHEMBL1140368",
+          "activity_id": 1474739,
+          "value_nM": 72.44,
+          "pchembl_value": 7.14
+        },
+        {
+          "document_chembl_id": "CHEMBL1142955",
+          "activity_id": 1820921,
+          "value_nM": 30.2,
+          "pchembl_value": 7.52
+        },
+        {
+          "document_chembl_id": "CHEMBL1143878",
+          "activity_id": 2121302,
+          "value_nM": 6025.6,
+          "pchembl_value": 5.22
+        },
+        {
+          "document_chembl_id": "CHEMBL1144828",
+          "activity_id": 2162106,
+          "value_nM": 44.67,
+          "pchembl_value": 7.35
+        },
+        {
+          "document_chembl_id": "CHEMBL1149257",
+          "activity_id": 1838545,
+          "value_nM": 467.74,
+          "pchembl_value": 6.33
+        },
+        {
+          "document_chembl_id": "CHEMBL1152459",
+          "activity_id": 2681438,
+          "value_nM": 6918.31,
+          "pchembl_value": 5.16
+        },
+        {
+          "document_chembl_id": "CHEMBL1155084",
+          "activity_id": 2451153,
+          "value_nM": 61.66,
+          "pchembl_value": 7.21
+        },
+        {
+          "document_chembl_id": "CHEMBL1773061",
+          "activity_id": 6194531,
+          "value_nM": 136.46,
+          "pchembl_value": 6.865
+        },
+        {
+          "document_chembl_id": "CHEMBL1799962",
+          "activity_id": 6282598,
+          "value_nM": 54.95,
+          "pchembl_value": 7.26
+        },
+        {
+          "document_chembl_id": "CHEMBL1909046",
+          "activity_id": 7824330,
+          "value_nM": 158.49,
+          "pchembl_value": 6.8
+        }
       ]
     },
     "activity_ids": [
@@ -237,6 +463,92 @@
         "CHEMBL3779778",
         "CHEMBL3797127",
         "CHEMBL3867460"
+      ],
+      "papers": [
+        {
+          "document_chembl_id": "CHEMBL1139695",
+          "activity_id": 1807585,
+          "value_nM": 10.96,
+          "pchembl_value": 7.96
+        },
+        {
+          "document_chembl_id": "CHEMBL1152817",
+          "activity_id": 2613238,
+          "value_nM": 19.95,
+          "pchembl_value": 7.7
+        },
+        {
+          "document_chembl_id": "CHEMBL1154287",
+          "activity_id": 3227709,
+          "value_nM": 33.11,
+          "pchembl_value": 7.48
+        },
+        {
+          "document_chembl_id": "CHEMBL1629452",
+          "activity_id": 5109059,
+          "value_nM": 1.58,
+          "pchembl_value": 8.8
+        },
+        {
+          "document_chembl_id": "CHEMBL1649080",
+          "activity_id": 5146667,
+          "value_nM": 12.02,
+          "pchembl_value": 7.92
+        },
+        {
+          "document_chembl_id": "CHEMBL1938231",
+          "activity_id": 8009852,
+          "value_nM": 263.03,
+          "pchembl_value": 6.58
+        },
+        {
+          "document_chembl_id": "CHEMBL2321829",
+          "activity_id": 12647829,
+          "value_nM": 181.97,
+          "pchembl_value": 6.74
+        },
+        {
+          "document_chembl_id": "CHEMBL3102787",
+          "activity_id": 13882552,
+          "value_nM": 2.51,
+          "pchembl_value": 8.6
+        },
+        {
+          "document_chembl_id": "CHEMBL3297690",
+          "activity_id": 14751983,
+          "value_nM": 153.11,
+          "pchembl_value": 6.815
+        },
+        {
+          "document_chembl_id": "CHEMBL3351789",
+          "activity_id": 15112130,
+          "value_nM": 0.6,
+          "pchembl_value": 9.22
+        },
+        {
+          "document_chembl_id": "CHEMBL3593193",
+          "activity_id": 15648410,
+          "value_nM": 3.09,
+          "pchembl_value": 8.51
+        },
+        {
+          "document_chembl_id": "CHEMBL3779778",
+          "activity_id": 16515203,
+          "value_nM": 10.0,
+          "pchembl_value": 8.0
+        },
+        {
+          "document_chembl_id": "CHEMBL3797127",
+          "activity_id": 16581329,
+          "value_nM": 95.5,
+          "pchembl_value": 7.02
+        },
+        {
+          "document_chembl_id": "CHEMBL3867460",
+          "activity_id": 16796965,
+          "value_nM": 2.82,
+          "pchembl_value": 8.55
+        }
       ]
     },
     "activity_ids": [

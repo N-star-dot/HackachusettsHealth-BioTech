@@ -178,6 +178,16 @@ def prior_ic50_nM(target_chembl_id: str, molecule_chembl_id: str) -> dict | None
         "spread_source": spread_source,
         "activity_ids": activity_ids,
         "document_chembl_ids": [p["document_chembl_id"] for p in papers],
+        # per-paper detail so a no-network designer can cite each paper's own value
+        "papers": [
+            {
+                "document_chembl_id": p["document_chembl_id"],
+                "activity_id": p["activity_ids"][0],
+                "value_nM": round(p["standard_value_nM"], 2),
+                "pchembl_value": round(p["pchembl_value"], 3),
+            }
+            for p in papers
+        ],
     }
 
 
