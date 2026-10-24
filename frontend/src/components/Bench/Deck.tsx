@@ -1,9 +1,11 @@
 import { labwareName } from "../../lib/labware";
-import type { DeckSlot, SimResult } from "../../api/types";
+import { Replay } from "./Replay";
+import type { DeckSlot, ExperimentDesign, SimResult } from "../../api/types";
 import styles from "./Deck.module.css";
 
 interface Props {
   sim?: SimResult | null;
+  design?: ExperimentDesign | null;
 }
 
 // Fixed compiler layout, used when sim.deck is absent (BRIEF 5.10).
@@ -18,7 +20,7 @@ const DECK_SLOTS = ["A1", "A2", "A3", "B1", "B2", "B3", "C1", "C2", "C3", "D1", 
 
 /** The Flex deck schematic (BRIEF 5.10). A-row at the top (back of the robot), D at the
  *  bottom; 3 columns. No logos — everything is drawn. Renders with or without sim.deck. */
-export function Deck({ sim }: Props) {
+export function Deck({ sim, design }: Props) {
   const loaded = new Map((sim?.deck?.length ? sim.deck : FIXED).map((s) => [s.slot, s]));
 
   return (
@@ -42,6 +44,7 @@ export function Deck({ sim }: Props) {
           <li key={s.slot}>{s.slot}: {labwareName(s.load_name) || s.display_name}</li>
         ))}
       </ul>
+      {sim && design && <Replay sim={sim} design={design} />}
     </div>
   );
 }

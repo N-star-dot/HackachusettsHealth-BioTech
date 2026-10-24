@@ -63,7 +63,7 @@ export function App() {
         </main>
 
         <aside className={styles.bench}>
-          {run && !blocked && run.sim ? <Deck sim={run.sim} /> : <DeckPlaceholder />}
+          {run && !blocked && run.sim ? <Deck sim={run.sim} design={run.design} /> : <DeckPlaceholder />}
           {run && !blocked && run.design && run.uncertainty && (
             <LabControls design={run.design} report={run.uncertainty} />
           )}
