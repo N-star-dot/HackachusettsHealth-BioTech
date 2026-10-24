@@ -1,8 +1,9 @@
 import { useCallback, useState } from "react";
 import { useRunMutation } from "../api/queries";
 import { loadRecordedRun } from "../api/recorded";
+import { api } from "../api/client";
 import { useUIStore } from "../state/store";
-import type { RunResponse } from "../api/types";
+import type { RunRecord, RunResponse } from "../api/types";
 
 export type RunOrigin = "live" | "recorded" | null;
 
@@ -40,11 +41,22 @@ export function useRun() {
     }
   }, []);
 
+  const openRunId = useCallback(async (runId: string) => {
+    try {
+      const rec = await api.get<RunRecord>(`/api/run/${runId}`);
+      setRun(rec);
+      setOrigin("live");
+    } catch {
+      /* unknown run id — leave the start screen up */
+    }
+  }, []);
+
   return {
     run,
     origin,
     start,
     openRecorded,
+    openRunId,
     isRunning: mutation.isPending,
     error: mutation.error,
     setRun,

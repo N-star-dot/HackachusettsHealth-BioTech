@@ -25,6 +25,9 @@
   color: var(--graphite);
 }
 
+.topActions { display: flex; align-items: center; gap: var(--space-3); }
+.share { background: none; border: 1px solid var(--ink); border-radius: var(--radius-button); padding: 2px var(--space-3); font-size: 14px; color: var(--ink); }
+
 /* Two columns at >=1200px: notebook (fluid) + bench (sticky). */
 .columns {
   display: grid;

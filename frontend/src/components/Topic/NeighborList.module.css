@@ -1,0 +1,7 @@
+.wrap { display: flex; flex-direction: column; gap: var(--space-2); }
+.title { font-size: 16px; font-weight: 600; }
+.list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: var(--space-2); }
+.row { display: flex; flex-direction: column; gap: 2px; }
+.name { font-size: 15px; }
+.meta { font-size: 13px; color: var(--graphite); }
+.explore { align-self: flex-start; background: none; border: 1px solid var(--rule); border-radius: var(--radius-input); padding: 2px var(--space-2); font-size: 13px; color: var(--ink); }
