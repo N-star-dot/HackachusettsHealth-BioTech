@@ -142,3 +142,19 @@ class ExperimentDesign(BaseModel):
         if self.volumes_uL.transfer < 1.0:
             object.__setattr__(self, "_transfer_warning", True)
         return self
+
+    @model_validator(mode="after")
+    def _volumes_match_factor(self) -> "ExperimentDesign":
+        # B1.1: the robot's volumes must realise the dilution factor the Monte Carlo uses,
+        # and the top well must stay under the plate's working volume (360 µL, 300 margin).
+        t = self.volumes_uL.transfer
+        d = self.volumes_uL.diluent
+        f = self.dilution.factor
+        if t > 0 and abs((t + d) / t - f) > 1e-6:
+            raise ValueError(
+                f"volumes must realise the dilution factor: (transfer+diluent)/transfer "
+                f"= {(t + d) / t:.4f} != factor {f}"
+            )
+        if t * f > 300.0 + 1e-6:
+            raise ValueError(f"transfer*factor = {t * f:g} µL exceeds the 300 µL well margin")
+        return self

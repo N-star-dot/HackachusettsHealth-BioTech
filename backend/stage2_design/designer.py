@@ -75,6 +75,10 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
     if capped:
         notes.append(f"top_nM capped at {_MAX_TOP_nM:g} nM (uncapped would exceed it)")
 
+    # B1.1: volumes must realise the dilution factor; derive diluent from it.
+    transfer_uL = 50.0
+    diluent_uL = transfer_uL * (dilution.factor - 1.0)
+
     design = ExperimentDesign(
         design_id=design_id,
         topic_id=target,
@@ -96,8 +100,8 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
         dilution=dilution,
         replicates=replicates,
         controls=controls,
-        plate=Plate(labware="corning_96_wellplate_360ul_flat", layout="randomized"),
-        volumes_uL=Volumes(transfer=50, diluent=100),
+        plate=Plate(labware="corning_96_wellplate_360ul_flat", layout="rows"),
+        volumes_uL=Volumes(transfer=transfer_uL, diluent=diluent_uL),
         pipette="flex_1channel_1000",
         tiprack="opentrons_flex_96_tiprack_200ul",
         rationale=rationale,
