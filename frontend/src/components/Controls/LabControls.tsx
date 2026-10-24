@@ -41,7 +41,7 @@ export function LabControls() {
     wi.commit();
   };
 
-  const estTips = plannedLayout(d).wellsUsed; // proxy cost for the chart x-axis
+  const estTips = wi.sim?.cost.tips ?? used; // real tips from the sim for the chart x-axis
 
   return (
     <div className={styles.wrap}>

@@ -18,9 +18,12 @@ export function MatrixTable({ topic }: Props) {
   const setWeight = useUIStore((s) => s.setWeight);
   const resetWeights = useUIStore((s) => s.resetWeights);
 
+  const unavailable = topic.matrix.unavailable_axes ?? [];
+  const isUnavailable = (a: AxisKey) => unavailable.includes(a);
   const axes = Object.fromEntries(AXES.map((a) => [a, topic.matrix[a]])) as Record<AxisKey, number>;
-  const total = weightedTotal(axes, weights);
-  const weightSum = AXES.reduce((s, k) => s + weights[k], 0);
+  const total = weightedTotal(axes, weights, unavailable);
+  const availableAxes = AXES.filter((a) => !isUnavailable(a));
+  const weightSum = availableAxes.reduce((s, k) => s + weights[k], 0);
 
   return (
     <div className={styles.wrap}>
@@ -29,12 +32,26 @@ export function MatrixTable({ topic }: Props) {
         <tbody>
           {AXES.map((axis) => {
             const value = axes[axis];
+            const unavailableAxis = isUnavailable(axis);
             const share = weightSum > 0 ? weights[axis] / weightSum : 0;
-            const contrib = contribution(axis, axes, weights);
+            const contrib = contribution(axis, axes, weights, unavailable);
             const srcForAxis = topic.matrix.axis_sources?.[axis];
             const prov = srcForAxis
               ? src(srcForAxis, topic.matrix.axis_notes?.[axis])
               : assumed("Assumed value. Not computed from this topic's data.");
+            if (unavailableAxis) {
+              return (
+                <tr key={axis} className={styles.unavailable}>
+                  <th className={styles.axis}>
+                    {AXIS_LABEL[axis]}
+                    <span className={styles.meaning}>{AXIS_MEANING[axis]}</span>
+                  </th>
+                  <td className={styles.valCell} colSpan={3}>
+                    <span className={styles.unavailableNote}>Unavailable offline</span>
+                  </td>
+                </tr>
+              );
+            }
             return (
               <tr key={axis} className={axisIsAssumed(topic, axis) ? styles.assumed : ""}>
                 <th className={styles.axis}>
@@ -75,12 +92,17 @@ export function MatrixTable({ topic }: Props) {
           value={weightSum > 0 ? total.toFixed(2) : "No weights set"}
           className={styles.total}
           provenance={derived(
-            "Weighted mean of the five axes: sum(axis x weight) / sum(weight).",
-            AXES.map((a) => ({ label: AXIS_LABEL[a], source: topic.matrix.axis_sources?.[a] })),
+            "Weighted mean of the available axes: sum(axis x weight) / sum(weight).",
+            availableAxes.map((a) => ({ label: AXIS_LABEL[a], source: topic.matrix.axis_sources?.[a] })),
           )}
         />
         <button className={styles.reset} onClick={resetWeights}>Reset weights</button>
       </div>
+      {unavailable.length > 0 && (
+        <p className={styles.axesNote}>
+          Viability over {availableAxes.length} of {AXES.length} axes. {unavailable.length === 1 ? "One axis is" : `${unavailable.length} axes are`} unavailable offline.
+        </p>
+      )}
     </div>
   );
 }

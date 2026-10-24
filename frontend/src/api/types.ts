@@ -23,6 +23,7 @@ export interface TopicReport {
   matrix: Record<AxisKey, number> & {
     weights: Record<AxisKey, number>;
     total: number;
+    unavailable_axes?: string[];
     axis_sources?: Partial<Record<AxisKey, Source>>;
     axis_notes?: Partial<Record<AxisKey, string>>;
   };

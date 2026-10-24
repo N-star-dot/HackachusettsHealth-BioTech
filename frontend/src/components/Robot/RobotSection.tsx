@@ -25,7 +25,11 @@ export function RobotSection({ sim }: Props) {
       <div className={styles.head}>
         <span className={styles.numeral}>3</span>
         <h2 className={styles.name}>
-          {ok ? "Passed the Opentrons simulator" : "Did not pass the Opentrons simulator"}
+          {staticOnly
+            ? "Static check only. Not simulated."
+            : ok
+              ? "Passed the Opentrons simulator"
+              : "Did not pass the Opentrons simulator"}
         </h2>
       </div>
 

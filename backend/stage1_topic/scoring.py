@@ -149,7 +149,11 @@ def score_topic(query: str, weights: dict[str, float] | None = None,
         "automatable": 1.0,
         "cost_time": 0.62,
     }
-    total = ViabilityMatrix.weighted_total(axes, weights)
+    # H2: offline OpenAlex means momentum and novelty can't be computed from real counts.
+    # Keep placeholder floats to satisfy the contract, but exclude them from the total and
+    # flag them so the dashboard shows "Unavailable offline".
+    unavailable_axes = ["momentum", "novelty"] if offline else []
+    total = ViabilityMatrix.weighted_total(axes, weights, unavailable_axes)
 
     # per-axis provenance (B0.2). Momentum traces to the model + OpenAlex counts; the
     # other four are fixed priors until B1.5 computes them, so they carry 'assumed'.
@@ -170,9 +174,15 @@ def score_topic(query: str, weights: dict[str, float] | None = None,
         axis_notes["momentum"] = (
             f"Trained model {MODEL_VERSION} scored this topic's 2015-2024 OpenAlex counts"
         )
+    else:
+        # H2: OpenAlex was unreachable, so momentum and novelty are not computed from real
+        # data. Label them plainly; the dashboard excludes them from the total.
+        axis_notes["momentum"] = "Unavailable: OpenAlex was unreachable"
+        axis_notes["novelty"] = "Unavailable: OpenAlex was unreachable"
 
     matrix = ViabilityMatrix(
         **axes, weights=weights, total=round(total, 6),
+        unavailable_axes=unavailable_axes,
         axis_sources=axis_sources, axis_notes=axis_notes,
     )
 
@@ -279,9 +289,16 @@ def recompute_axes(report: TopicReport, design, sim) -> TopicReport:
         axis_sources["cost_time"] = Source(type=SourceType.SIMULATOR, id=sim.protocol_file)
         axis_notes["cost_time"] = "Share of one 96-tip rack left unused"
 
-    total = ViabilityMatrix.weighted_total(axes, m.weights)
+    # Carry forward axes the first pass could not compute (H2 offline). If novelty just
+    # became computable here, drop it from the unavailable set.
+    unavailable_axes = list(m.unavailable_axes)
+    if nov is not None and "novelty" in unavailable_axes:
+        unavailable_axes.remove("novelty")
+
+    total = ViabilityMatrix.weighted_total(axes, m.weights, unavailable_axes)
     new_matrix = ViabilityMatrix(
         **axes, weights=m.weights, total=round(total, 6),
+        unavailable_axes=unavailable_axes,
         axis_sources=axis_sources, axis_notes=axis_notes,
     )
     return report.model_copy(update={"matrix": new_matrix})

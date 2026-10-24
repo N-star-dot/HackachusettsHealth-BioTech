@@ -30,3 +30,7 @@
 .totalLabel { font-size: 14px; color: var(--graphite); }
 .total { font-size: 48px; line-height: 52px; font-weight: 700; font-stretch: 118%; }
 .reset { margin-left: auto; background: none; border: none; color: var(--ink); text-decoration: underline; font-size: 14px; }
+
+.unavailable .axis { color: var(--graphite); }
+.unavailableNote { font-size: 13px; color: var(--graphite); font-stretch: 75%; }
+.axesNote { font-size: 13px; color: var(--graphite); margin-top: var(--space-1); }

@@ -15,6 +15,20 @@ describe("weightedTotal (BRIEF B.1)", () => {
     expect(Math.abs(weightedTotal(axes, weights) - 0.656)).toBeLessThan(1e-6);
   });
 
+  it("excludes unavailable axes from the total and contributions (H2)", () => {
+    const axes = { momentum: 0.5, novelty: 0.55, evidence: 0.4, automatable: 1, cost_time: 0.62 };
+    const weights = { momentum: 0.2, novelty: 0.2, evidence: 0.2, automatable: 0.2, cost_time: 0.2 };
+    const unavailable = ["momentum", "novelty"];
+    // total is the mean of the 3 available axes (equal weights): (0.4 + 1 + 0.62)/3
+    const expected = (0.4 + 1 + 0.62) / 3;
+    expect(Math.abs(weightedTotal(axes, weights, unavailable) - expected)).toBeLessThan(1e-6);
+    // unavailable axes contribute nothing; available contributions sum to the total
+    expect(contribution("momentum", axes, weights, unavailable)).toBe(0);
+    const sum = ["evidence", "automatable", "cost_time"].reduce(
+      (s, k) => s + contribution(k as AxisKey, axes, weights, unavailable), 0);
+    expect(Math.abs(sum - expected)).toBeLessThan(1e-9);
+  });
+
   it("stays in [0,1], scale-invariant, contributions sum to total", () => {
     fc.assert(
       fc.property(axrec(), wrec(), (axes, weights) => {

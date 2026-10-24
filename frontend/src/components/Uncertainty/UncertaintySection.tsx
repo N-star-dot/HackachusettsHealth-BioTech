@@ -78,24 +78,41 @@ export function UncertaintySection({ report }: Props) {
           of {calibration.pairs.toLocaleString()} held-out ChEMBL measurements. The target is 90%.
         </p>
 
-        {report.next_experiments.length > 0 && (
-          <div className={styles.next}>
-            <h3 className={styles.nextTitle}>Best next changes</h3>
-            <ul>
-              {report.next_experiments.map((ne, i) => (
-                <li key={i}>
-                  {ne.change} —{" "}
-                  <Num
-                    value={ne.p90_after != null
-                      ? `p90 ${fold(fold_error.p90)} to ${fold(ne.p90_after)}`
-                      : `${ne.p90_fold_error_drop_pct}% less excess error`}
-                    provenance={sim()} />{" "}
-                  (+{ne.extra_tips} tips, +{ne.extra_compound_uL} µL compound)
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {report.next_experiments.length > 0 && (() => {
+          const improving = report.next_experiments.filter(
+            (ne) => ne.p90_after == null || ne.p90_after < fold_error.p90,
+          );
+          const worse = report.next_experiments.filter(
+            (ne) => ne.p90_after != null && ne.p90_after >= fold_error.p90,
+          );
+          const line = (ne: typeof report.next_experiments[number], i: number) => (
+            <li key={i}>
+              {ne.change}.{" "}
+              <Num
+                value={ne.p90_after != null
+                  ? `p90 ${fold(fold_error.p90)} to ${fold(ne.p90_after)}`
+                  : `${ne.p90_fold_error_drop_pct}% less excess error`}
+                provenance={sim()} />{" "}
+              (+{ne.extra_tips} tips, +{ne.extra_compound_uL} µL compound)
+            </li>
+          );
+          return (
+            <div className={styles.next}>
+              {improving.length > 0 && (
+                <>
+                  <h3 className={styles.nextTitle}>Best next changes</h3>
+                  <ul>{improving.map(line)}</ul>
+                </>
+              )}
+              {worse.length > 0 && (
+                <>
+                  <h3 className={`${styles.nextTitle} ${styles.worseTitle}`}>Makes it worse</h3>
+                  <ul className={styles.worse}>{worse.map(line)}</ul>
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </section>
   );

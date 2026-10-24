@@ -17,9 +17,13 @@ export function PlateMap({ design }: Props) {
   const fill = (w: PlannedWell): string => {
     if (w.kind === "dilution" && w.concNM != null) return activityColor(activity(w.concNM, ic50));
     if (w.kind === "positive" && w.concNM != null) return activityColor(activity(w.concNM, ic50));
-    if (w.kind === "negative") return "var(--sheet)";
+    // H8: a negative control has no compound, so the target is fully active (100%, pink).
+    if (w.kind === "negative") return activityColor(100);
     return "transparent";
   };
+
+  const mark = (w: PlannedWell): string =>
+    w.kind === "negative" ? "N" : w.kind === "positive" ? "P" : "";
 
   const title = (w: PlannedWell): string => {
     if (w.kind === "dilution" && w.concNM != null) {
@@ -48,7 +52,9 @@ export function PlateMap({ design }: Props) {
                 style={{ background: fill(w) }}
                 title={title(w)}
                 tabIndex={w.kind !== "empty" ? 0 : -1}
-              />
+              >
+                {mark(w) && <span className={styles.wellMark}>{mark(w)}</span>}
+              </div>
             );
           }),
         ])}

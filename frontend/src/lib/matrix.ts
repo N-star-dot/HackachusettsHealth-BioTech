@@ -19,27 +19,34 @@ export const AXIS_LABEL: Record<AxisKey, string> = {
   cost_time: "Cost and time",
 };
 
-/** total = sum(axis_k * w_k) / sum(w); 0 when weights sum to 0. */
+/** total = sum(axis_k * w_k) / sum(w) over the available axes; 0 when weights sum to 0.
+ *  Axes in `unavailable` are excluded from both numerator and weight sum (H2). */
 export function weightedTotal(
   axes: Record<AxisKey, number>,
   weights: Record<AxisKey, number>,
+  unavailable: readonly string[] = [],
 ): number {
+  const skip = new Set(unavailable);
   let num = 0;
   let den = 0;
   for (const k of AXES) {
+    if (skip.has(k)) continue;
     num += axes[k] * (weights[k] ?? 0);
     den += weights[k] ?? 0;
   }
   return den > 0 ? num / den : 0;
 }
 
-/** Contribution of one axis = axis_k * w_k / sum(w). */
+/** Contribution of one axis = axis_k * w_k / sum(w) over the available axes. */
 export function contribution(
   axis: AxisKey,
   axes: Record<AxisKey, number>,
   weights: Record<AxisKey, number>,
+  unavailable: readonly string[] = [],
 ): number {
+  if (unavailable.includes(axis)) return 0;
+  const skip = new Set(unavailable);
   let den = 0;
-  for (const k of AXES) den += weights[k] ?? 0;
+  for (const k of AXES) { if (!skip.has(k)) den += weights[k] ?? 0; }
   return den > 0 ? (axes[axis] * (weights[axis] ?? 0)) / den : 0;
 }
