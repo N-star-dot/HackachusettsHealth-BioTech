@@ -255,3 +255,16 @@ def protocol(name: str) -> str:
         if candidate.is_file():
             return candidate.read_text()
     raise HTTPException(status_code=404, detail=f"protocol {name!r} not found")
+
+
+_METRICS_PATH = __import__("pathlib").Path(__file__).resolve().parents[2] / "models" / "metrics.json"
+
+
+@app.get("/api/metrics")
+def metrics() -> dict:
+    """Serve models/metrics.json (B2.3). 404 until scripts/build_metrics.py has run."""
+    import json
+
+    if not _METRICS_PATH.is_file():
+        raise HTTPException(status_code=404, detail="metrics not built; run scripts/build_metrics.py")
+    return json.loads(_METRICS_PATH.read_text())

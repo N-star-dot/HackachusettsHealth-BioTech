@@ -34,6 +34,7 @@ protocols/whatif/
 
 # Trained model artifacts (regenerate with scripts/train_momentum.py)
 models/*.pkl
+models/metrics.json
 
 # Local SQLite database file (schema is committed, data is not)
 database/app.db
