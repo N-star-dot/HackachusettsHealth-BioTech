@@ -241,7 +241,9 @@ def simulate(req: SimulateRequest) -> SimResult:
     return simulate_protocol(path, req.design)
 
 
-_PROTOCOLS_DIR = __import__("pathlib").Path(__file__).resolve().parents[2] / "protocols"
+# Protocol files are written by the compiler to a dir OUTSIDE the repo tree (so
+# uvicorn --reload doesn't restart mid-run). Read from that same resolved dir.
+from backend.stage3_protocol.compiler import _PROTOCOLS_DIR
 
 
 @app.get("/api/protocol/{name}", response_class=PlainTextResponse)

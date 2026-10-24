@@ -11,11 +11,19 @@ design. Gotchas baked in:
 
 from __future__ import annotations
 
+import os
+import tempfile
 from pathlib import Path
 
 from backend.contracts import ExperimentDesign
 
-_PROTOCOLS_DIR = Path(__file__).resolve().parents[2] / "protocols"
+# Generated protocol .py files go OUTSIDE the repo tree by default. Writing them inside the
+# repo makes `uvicorn --reload` restart the server mid-run (the reloader watches *.py),
+# which kills the in-flight pipeline worker and leaves a run "stuck". Override with
+# PROTOCOLS_DIR if you want them somewhere specific. The API's protocol viewer reads from
+# the same resolved dir.
+_DEFAULT_PROTOCOLS_DIR = Path(tempfile.gettempdir()) / "labplanner_protocols"
+_PROTOCOLS_DIR = Path(os.environ.get("PROTOCOLS_DIR", str(_DEFAULT_PROTOCOLS_DIR)))
 
 # The fixed deck layout the template loads. Kept here so the simulator wrapper can report
 # it as SimResult.deck even when the Opentrons package isn't installed. Mirrors the
