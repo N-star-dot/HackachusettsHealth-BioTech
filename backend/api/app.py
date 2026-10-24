@@ -268,3 +268,24 @@ def metrics() -> dict:
     if not _METRICS_PATH.is_file():
         raise HTTPException(status_code=404, detail="metrics not built; run scripts/build_metrics.py")
     return json.loads(_METRICS_PATH.read_text())
+
+
+@app.get("/api/evidence/{compound_chembl_id}")
+def evidence(compound_chembl_id: str) -> list[dict]:
+    """Return a compound's frozen abstracts (B2.4) for the dashboard's evidence drawer."""
+    from backend.stage2_design import load_evidence
+
+    ev = load_evidence().get(compound_chembl_id)
+    if not ev:
+        raise HTTPException(status_code=404, detail=f"no evidence for {compound_chembl_id!r}")
+    return [
+        {
+            "pmid": rec["pmid"],
+            "title": rec.get("title"),
+            "abstract": rec.get("abstract"),
+            "year": rec.get("year"),
+            "journal": rec.get("journal"),
+            "document_chembl_id": rec.get("document_chembl_id"),
+        }
+        for rec in ev.values()
+    ]
