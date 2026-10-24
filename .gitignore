@@ -30,6 +30,7 @@ htmlcov/
 
 # Generated protocol outputs (keep the folder via .gitkeep)
 protocols/*.py
+protocols/whatif/
 
 # Trained model artifacts (regenerate with scripts/train_momentum.py)
 models/*.pkl

@@ -14,6 +14,7 @@ a fresh POST (alias fields like safety.pass / simulator.pass, not the stored fie
 
 from __future__ import annotations
 
+import re
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
@@ -26,6 +27,7 @@ from backend.contracts import (
     TopicReport,
     UncertaintyReport,
 )
+from backend.stage3_protocol import compile_whatif, simulate_protocol
 from backend.stage4_uncertainty import plan_next_experiments, run_uncertainty
 from database import get_db
 from pipeline import run_pipeline
@@ -184,3 +186,26 @@ def uncertainty(req: WhatIfRequest) -> UncertaintyReport:
     report = run_uncertainty(req.design, runs=req.runs, seed=req.seed, reader_cv=req.reader_cv)
     report.next_experiments = plan_next_experiments(req.design, report)
     return report
+
+
+_DESIGN_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+class SimulateRequest(BaseModel):
+    design: ExperimentDesign
+
+
+@app.post("/api/simulate", response_model=SimResult)
+def simulate(req: SimulateRequest) -> SimResult:
+    """Compile + simulate a what-if design so the lab controls get cost and a replay.
+
+    Compiles to protocols/whatif/<sha1>.py (never overwriting a run's protocol). The
+    design_id must be filename-safe; the dashboard sends ids like 'd-001-w3fa21c'.
+    """
+    if not _DESIGN_ID_RE.match(req.design.design_id):
+        raise HTTPException(
+            status_code=422,
+            detail=f"design_id {req.design.design_id!r} must match ^[A-Za-z0-9_-]{{1,64}}$",
+        )
+    path = compile_whatif(req.design)
+    return simulate_protocol(path, req.design)

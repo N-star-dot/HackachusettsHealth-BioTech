@@ -87,3 +87,27 @@ def compile_design(design: ExperimentDesign) -> Path:
     out = _PROTOCOLS_DIR / f"{design.design_id}.py"
     out.write_text(code)
     return out
+
+
+_WHATIF_DIR = _PROTOCOLS_DIR / "whatif"
+
+
+def compile_whatif(design: ExperimentDesign) -> Path:
+    """Compile a what-if design to protocols/whatif/<sha1>.py so it never overwrites a
+    run's protocols/<design_id>.py. The filename hashes the design JSON (stable)."""
+    import hashlib
+
+    _WHATIF_DIR.mkdir(parents=True, exist_ok=True)
+    code = _TEMPLATE.format(
+        design_id=design.design_id,
+        tiprack=design.tiprack,
+        plate_labware=design.plate.labware,
+        pipette=design.pipette,
+        transfer_uL=design.volumes_uL.transfer,
+        diluent_uL=design.volumes_uL.diluent,
+        points=design.dilution.points,
+    )
+    digest = hashlib.sha1(design.model_dump_json().encode()).hexdigest()[:12]
+    out = _WHATIF_DIR / f"{digest}.py"
+    out.write_text(code)
+    return out
