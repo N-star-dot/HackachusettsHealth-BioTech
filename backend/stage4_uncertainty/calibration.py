@@ -57,3 +57,30 @@ def widen_until_calibrated(
         spread *= 1.1
         after = coverage_90(groups, spread)
     return spread, before, after
+
+
+def load_calibration_groups() -> list[list[float]]:
+    """Load real ChEMBL IC50 measurement groups from the database.
+
+    Returns a list of per-pair value lists (nM), each with >=3 values. Empty if the
+    calibration_groups table hasn't been populated (run build_calibration_data.py).
+    Import of the DB is local so engine.py has no hard DB dependency when groups are
+    passed in directly.
+    """
+    try:
+        from database import get_db
+
+        rows = get_db().all_calibration_groups()
+        return [r["values_nM"] for r in rows if len(r["values_nM"]) >= 3]
+    except Exception:
+        return []
+
+
+def calibrate(spread_log10: float, groups: list[list[float]] | None = None) -> Calibration:
+    """Coverage of the given noise spread against real ChEMBL groups (loaded from the DB
+    if not supplied). Returns a zeroed Calibration if no groups are available."""
+    if groups is None:
+        groups = load_calibration_groups()
+    if not groups:
+        return Calibration(coverage_90=0.0, pairs=0)
+    return coverage_90(groups, spread_log10)

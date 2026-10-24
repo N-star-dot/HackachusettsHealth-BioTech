@@ -39,7 +39,14 @@ class Database:
 
     def _ensure_schema(self) -> None:
         self._conn.executescript(_SCHEMA_PATH.read_text())
+        self._migrate()
         self._conn.commit()
+
+    def _migrate(self) -> None:
+        """Idempotent migrations for DBs created before a column was added."""
+        cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(topic_features)")}
+        if "growth" not in cols:
+            self._conn.execute("ALTER TABLE topic_features ADD COLUMN growth REAL")
 
     # --- api cache ---------------------------------------------------------
     def cache_get(self, source: str, request_key: str) -> dict[str, Any] | None:
@@ -100,15 +107,16 @@ class Database:
 
     # --- momentum model feature cache -------------------------------------
     def upsert_topic_features(
-        self, openalex_id: str, name: str, features: dict, label: int | None
+        self, openalex_id: str, name: str, features: dict, label: int | None,
+        growth: float | None = None,
     ) -> None:
         self._conn.execute(
-            """INSERT INTO topic_features(openalex_id, name, features, label, updated_at)
-               VALUES(?,?,?,?,?)
+            """INSERT INTO topic_features(openalex_id, name, features, label, growth, updated_at)
+               VALUES(?,?,?,?,?,?)
                ON CONFLICT(openalex_id) DO UPDATE SET
                  name=excluded.name, features=excluded.features,
-                 label=excluded.label, updated_at=excluded.updated_at""",
-            (openalex_id, name, json.dumps(features), label, _now()),
+                 label=excluded.label, growth=excluded.growth, updated_at=excluded.updated_at""",
+            (openalex_id, name, json.dumps(features), label, growth, _now()),
         )
         self._conn.commit()
 
@@ -118,6 +126,33 @@ class Database:
         for r in rows:
             d = dict(r)
             d["features"] = json.loads(d["features"])
+            out.append(d)
+        return out
+
+    # --- calibration groups (real ChEMBL IC50 measurement groups) ---------
+    def upsert_calibration_group(
+        self, target_chembl_id: str, molecule_chembl_id: str,
+        values_nM: list[float], activity_ids: list,
+    ) -> None:
+        self._conn.execute(
+            """INSERT INTO calibration_groups(
+                   target_chembl_id, molecule_chembl_id, values_nM, activity_ids, updated_at)
+               VALUES(?,?,?,?,?)
+               ON CONFLICT(target_chembl_id, molecule_chembl_id) DO UPDATE SET
+                 values_nM=excluded.values_nM, activity_ids=excluded.activity_ids,
+                 updated_at=excluded.updated_at""",
+            (target_chembl_id, molecule_chembl_id, json.dumps(values_nM),
+             json.dumps(activity_ids), _now()),
+        )
+        self._conn.commit()
+
+    def all_calibration_groups(self) -> list[dict[str, Any]]:
+        rows = self._conn.execute("SELECT * FROM calibration_groups").fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            d["values_nM"] = json.loads(d["values_nM"])
+            d["activity_ids"] = json.loads(d["activity_ids"])
             out.append(d)
         return out
 

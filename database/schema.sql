@@ -56,5 +56,20 @@ CREATE TABLE IF NOT EXISTS topic_features (
     name        TEXT,
     features    TEXT NOT NULL,               -- JSON feature vector (counts up to 2019 only)
     label       INTEGER,                     -- 1 if grew faster than median 2020-2024, else 0, null if unknown
+    growth      REAL,                        -- raw 2020-2024 log10 growth slope (for top-decile eval; NOT a feature)
     updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- ---------------------------------------------------------------------------
+-- 5. Calibration groups (owned by A) — real ChEMBL IC50 measurement groups per
+--    (target, compound) pair with >=3 values. The uncertainty engine holds one
+--    value out and checks whether its 90% interval covers it.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS calibration_groups (
+    target_chembl_id   TEXT NOT NULL,
+    molecule_chembl_id TEXT NOT NULL,
+    values_nM          TEXT NOT NULL,        -- JSON list of IC50 values (nM), >=3 of them
+    activity_ids       TEXT NOT NULL,        -- JSON list of ChEMBL activity ids (provenance)
+    updated_at         TEXT NOT NULL DEFAULT (datetime('now')),
+    PRIMARY KEY (target_chembl_id, molecule_chembl_id)
 );

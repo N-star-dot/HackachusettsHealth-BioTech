@@ -24,12 +24,26 @@ def design_fold_error() -> dict:
 
 
 def calibration_coverage() -> dict:
-    """Metric: calibration coverage against synthetic ChEMBL-like groups.
-    Replace `groups` with real pulled measurement groups (>=3 values each)."""
+    """Metric: calibration coverage against REAL ChEMBL IC50 measurement groups.
+
+    Pulls groups from the calibration_groups table (populated by
+    scripts/build_calibration_data.py). Falls back to synthetic lognormal groups only
+    if the table is empty, clearly labelling which source was used.
+    """
+    from database import get_db
+
+    rows = get_db().all_calibration_groups()
+    real_groups = [r["values_nM"] for r in rows if len(r["values_nM"]) >= 3]
+
+    if real_groups:
+        cal = coverage_90(real_groups)
+        return {"coverage_90": cal.coverage_90, "pairs": cal.pairs, "data": "real ChEMBL"}
+
+    # fallback: synthetic, clearly labelled (run build_calibration_data.py for real)
     rng = np.random.default_rng(0)
     groups = [list(10 ** rng.normal(2.0, 0.68, size=5)) for _ in range(200)]
     cal = coverage_90(groups)
-    return {"coverage_90": cal.coverage_90, "pairs": cal.pairs}
+    return {"coverage_90": cal.coverage_90, "pairs": cal.pairs, "data": "SYNTHETIC (run build_calibration_data.py)"}
 
 
 def simulator_pass_rate() -> dict:

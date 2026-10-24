@@ -24,7 +24,7 @@ dependencies = [
 # Opentrons is heavy and pins Python <=3.13; keep it optional so the rest of the
 # repo installs on any 3.10+ machine. Install with: pip install -e ".[robot]"
 robot = ["opentrons==10.1.0"]
-dev = ["pytest>=8.0", "ruff>=0.4", "httpx>=0.27"]
+dev = ["pytest>=8.0", "ruff>=0.4", "httpx>=0.27", "hypothesis>=6.0"]
 
 [tool.setuptools.packages.find]
 where = ["."]

@@ -1,6 +1,7 @@
-"""Stage 4: the uncertainty engine (the core ML piece). Owner A.
+"""Stage 4: the uncertainty engine. Owner A.
 
-Monte Carlo over a dose-response (4-parameter Hill) assay. Each run:
+A Monte Carlo simulation (NOT a trained model — there is nothing to fit) over a
+dose-response (4-parameter Hill) assay. Each run:
   1. draws a 'true' IC50 from the prior (lab-to-lab spread, Kalliokoski 2013),
   2. pushes concentrations through the serial dilution with pipetting error
      (random CV compounds as sqrt(n); systematic bias compounds multiplicatively),
@@ -8,8 +9,9 @@ Monte Carlo over a dose-response (4-parameter Hill) assay. Each run:
   4. fits the Hill curve and records the recovered IC50.
 
 It reports fold error (median, p90), share of runs where the true IC50 falls
-outside the tested range, and share of failed fits. Vectorised with numpy so 1,000
-runs finish in well under a second.
+outside the tested range, the share of failed fits, and a CALIBRATION coverage
+measured against real ChEMBL measurement groups (the honesty check). Vectorised with
+numpy so 1,000 runs finish in well under a second.
 
 Noise levels are looked up from a single source-of-truth table (noise_sources.py),
 each tagged with a real Source.
@@ -24,10 +26,10 @@ from backend.contracts import (
     Calibration,
     ExperimentDesign,
     FoldError,
-    NextExperiment,
     NoiseModel,
     UncertaintyReport,
 )
+from backend.stage4_uncertainty.calibration import calibrate
 from backend.stage4_uncertainty.noise_sources import (
     LAB_SPREAD_LOG10,
     lookup_pipette_error,
@@ -54,7 +56,7 @@ def _simulate_once(
     replicates: int,
     hill_slope: float = 1.0,
 ) -> tuple[float, bool, bool]:
-    """One virtual experiment. Returns (recovered_ic50, outside_range, fit_failed)."""
+    """One virtual experiment. Returns (recovered_ic50, outside_range, fit_failed, true_ic50)."""
     # 1. true IC50 drawn from lab-to-lab spread (lognormal in log10 space)
     true_log10 = np.log10(prior_median_nM) + rng.normal(0, noise.lab_spread_log10)
     true_ic50 = 10**true_log10
@@ -91,14 +93,21 @@ def run_uncertainty(
     runs: int = 1000,
     seed: int = 42,
     reader_cv: float = 0.05,
+    calibrate_coverage: bool = True,
 ) -> UncertaintyReport:
-    """Full Monte Carlo for one design -> UncertaintyReport."""
+    """Full Monte Carlo for one design -> UncertaintyReport.
+
+    If `calibrate_coverage` is True, the report's calibration is measured against the
+    real ChEMBL groups in the database using this design's own lab-spread. It's a cheap
+    computation; set False to skip when the calibration table is empty or for speed.
+    """
     rng = np.random.default_rng(seed)
     concentrations = _concentrations(design)
 
     p_cv, p_bias = lookup_pipette_error(design.pipette, design.volumes_uL.transfer)
+    spread = design.prior_ic50.spread_log10 or LAB_SPREAD_LOG10
     noise = NoiseModel(
-        lab_spread_log10=design.prior_ic50.spread_log10 or LAB_SPREAD_LOG10,
+        lab_spread_log10=spread,
         pipette_cv=p_cv,
         pipette_bias=p_bias,
         reader_cv=reader_cv,
@@ -120,6 +129,11 @@ def run_uncertainty(
         fold_errors.append(fe)
 
     fe_arr = np.array(fold_errors)
+
+    calibration = (
+        calibrate(spread) if calibrate_coverage else Calibration(coverage_90=0.0, pairs=0)
+    )
+
     report = UncertaintyReport(
         design_id=design.design_id,
         label="simulated",
@@ -129,7 +143,7 @@ def run_uncertainty(
         fold_error=FoldError(median=float(np.median(fe_arr)), p90=float(np.percentile(fe_arr, 90))),
         outside_range_share=outside_count / runs,
         failed_fit_share=failed_count / runs,
-        calibration=Calibration(coverage_90=0.0, pairs=0),  # filled by calibration.py
-        next_experiments=[],  # filled by planner.py
+        calibration=calibration,  # measured against real ChEMBL groups
+        next_experiments=[],  # filled by planner.py (via the orchestrator)
     )
     return report
