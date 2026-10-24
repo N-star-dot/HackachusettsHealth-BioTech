@@ -27,11 +27,11 @@ that pick experiments without a data science team.
 python -m pip install --upgrade pip
 pip install -e ".[dev]"
 
-# 2. create the local database
+# 2. create the local database and load the offline cache seed
 python scripts/init_db.py
 
 # 3. run the whole pipeline end-to-end, offline
-python scripts/demo.py "kinase inhibitors for liver fibrosis"
+INGEST_OFFLINE=1 python scripts/demo.py "kinase inhibitors for liver fibrosis"
 
 # 4. the reported evaluation metrics
 python scripts/eval_metrics.py
@@ -46,6 +46,22 @@ uvicorn backend.api:app --reload      # http://127.0.0.1:8000/docs
 The real Opentrons simulator is optional (it pins Python ≤ 3.13). Install it with
 `pip install -e ".[robot]"` in a 3.13 environment; without it, stage 3 falls back to a
 static protocol check so everything still runs.
+
+### Running offline (cache seed)
+External data (OpenAlex / PubMed / ChEMBL) is pulled once and cached, so the demo runs
+with no network. `scripts/init_db.py` loads a committed cache seed from `database/seed/`
+into the local DB, and `INGEST_OFFLINE=1` guarantees the pipeline never touches the
+network — a cached request is served locally; an uncached one raises instead of fetching.
+
+To refresh the seed with live data (run once, online, then commit the result):
+
+```bash
+python scripts/seed_cache.py --online --topic "kinase inhibitors for liver fibrosis"
+```
+
+API keys are optional (keyless works at lower rate limits). Copy `.env.example` to `.env`
+and fill in any of `OPENALEX_API_KEY`, `NCBI_API_KEY`, `CONTACT_EMAIL` to raise limits;
+`.env` is loaded automatically and is gitignored.
 
 ---
 

@@ -32,6 +32,20 @@ class PipelineResult:
     blocked: bool = False
 
 
+def _safe_title_lookup(pmid: str) -> str | None:
+    """Resolve a PMID title via PubMed (cached), treating any failure as unverified.
+
+    In offline mode an uncached PMID raises OfflineCacheMiss; a live lookup can fail
+    on network errors. Either way the citation stays unverified — the conservative,
+    source-honest default.
+    """
+    try:
+        from pipeline.ingest import pubmed
+        return pubmed.fetch_title(pmid)
+    except Exception:  # noqa: BLE001 - any lookup failure -> treat citation as unverified
+        return None
+
+
 def run_pipeline(
     query: str,
     weights: dict[str, float] | None = None,
@@ -39,6 +53,7 @@ def run_pipeline(
     seed: int = 42,
     reader_cv: float = 0.05,
     persist: bool = True,
+    target_chembl_id: str | None = None,
 ) -> PipelineResult:
     db = get_db() if persist else None
     run_id = db.create_run(query) if db else "ephemeral"
@@ -56,8 +71,20 @@ def run_pipeline(
         return PipelineResult(run_id, topic, None, None, None, blocked=True)
 
     # --- stage 2: design + citation check ---
-    design = design_experiment(topic.topic.openalex_id)
-    design = check_citations(design)  # offline -> leaves unverified; pass lookup when online
+    # Real ChEMBL prior when a target is supplied (cached); None -> placeholder prior.
+    prior = None
+    if target_chembl_id:
+        try:
+            from pipeline.ingest import chembl
+            prior = chembl.prior_ic50_nM(target_chembl_id)
+        except Exception:  # noqa: BLE001 - no/failed prior -> placeholder prior in designer
+            prior = None
+    design = design_experiment(
+        topic.topic.openalex_id, prior=prior, target_chembl_id=target_chembl_id
+    )
+    # Verify PMIDs against PubMed (cached). Any lookup failure (offline cache miss,
+    # network error, unresolved PMID) is treated as unverified — conservative and safe.
+    design = check_citations(design, lookup_title=_safe_title_lookup)
     if db:
         db.save_report(run_id, "design", design)
         db.set_run_status(run_id, "design")

@@ -12,8 +12,9 @@
 ```bash
 pip install --upgrade pip && pip install -e ".[dev]"   # setup
 pip install -e ".[robot]"      # add the real Opentrons simulator (needs Python <=3.13)
-python scripts/init_db.py      # create database/app.db
-python scripts/demo.py "your topic"     # end-to-end, offline
+python scripts/init_db.py      # create database/app.db + load the offline cache seed
+INGEST_OFFLINE=1 python scripts/demo.py "your topic"   # end-to-end, offline
+python scripts/seed_cache.py --online --topic "your topic"  # refresh seed from live APIs
 python scripts/eval_metrics.py          # the reported metrics
 python -m pytest -q                      # tests
 uvicorn backend.api:app --reload         # API at http://127.0.0.1:8000/docs
@@ -28,8 +29,16 @@ uvicorn backend.api:app --reload         # API at http://127.0.0.1:8000/docs
 
 ## Data-source rules
 - Cache every API response on first pull (`pipeline/ingest/http_cache.py`) so the demo
-  runs offline.
-- Keys are optional; keyless works at lower rate limits. Set `CONTACT_EMAIL` for the polite pool.
+  runs offline. The cache key excludes auth params (`api_key`, `mailto`, `email`), so a
+  keyless seed is a hit whether or not a key is set, and no secret lands in a seed file.
+- `cached_get_json` supports `ttl_seconds` (stale entries refetch when online; default
+  `None` = never expire) and an offline mode (`offline=True` or `INGEST_OFFLINE=1`): a
+  cached request is served locally, an uncached one raises `OfflineCacheMiss` rather than
+  hitting the network.
+- Commit the offline cache seed under `database/seed/<source>.json`; `init_db` loads it.
+  Regenerate real data with `scripts/seed_cache.py --online` (run once, then commit).
+- Keys are optional; keyless works at lower rate limits. `.env` is loaded automatically
+  (gitignored). Set `CONTACT_EMAIL` for the polite pool.
 - **Do not use Google Scholar.** Its robots.txt disallows `/scholar` for all bots, automated
   access violates Google's terms, and the Hackachusetts rules bar submissions that violate
   contract rights.

@@ -22,28 +22,57 @@ from backend.contracts import (
 from backend.contracts.common import SourceType
 
 
-def design_experiment(topic_id: str, prior_median_nM: float = 120.0) -> ExperimentDesign:
+def design_experiment(
+    topic_id: str,
+    prior_median_nM: float = 120.0,
+    prior: dict | None = None,
+    target_chembl_id: str | None = None,
+) -> ExperimentDesign:
     """Deterministic placeholder design covering the prior by ~2 log units each side.
 
-    Real version: prompt the Designer LLM with the topic, top PubMed abstracts and the
-    ChEMBL prior, parse its JSON into ExperimentDesign, then run the citation checker.
+    Data wiring (this task): when a real ChEMBL `prior` dict is supplied (from
+    `pipeline.ingest.chembl.prior_ic50_nM`), its median/n/spread and activity-id source
+    are used instead of the placeholder, so the starting IC50 guess traces to ChEMBL.
+    The dilution range is recentred on the real median so it still spans the prior.
+
+    Real (future) version: prompt the Designer LLM with the topic, top PubMed abstracts
+    and this prior, parse its JSON into ExperimentDesign, then run the citation checker.
     """
+    if prior:
+        median_nM = float(prior.get("median_nM", prior_median_nM))
+        activity_ids = prior.get("activity_ids") or []
+        prior_model = PriorIC50(
+            median_nM=median_nM,
+            n_measurements=int(prior.get("n_measurements", 1)),
+            spread_log10=float(prior.get("spread_log10", 0.68)),
+            source=Source(
+                type=SourceType.CHEMBL_ACTIVITY,
+                id=str(activity_ids[0]) if activity_ids else (target_chembl_id or "chembl"),
+            ),
+        )
+    else:
+        median_nM = prior_median_nM
+        prior_model = PriorIC50(
+            median_nM=prior_median_nM,
+            n_measurements=6,
+            spread_log10=0.68,
+            source=Source(type=SourceType.CHEMBL_ACTIVITY, id="placeholder"),
+        )
+
+    # top of the dilution series ~2 log10 units above the median (100x), 3-fold steps.
+    top_nM = round(median_nM * 100.0, 3)
+
     design = ExperimentDesign(
         design_id="d-001",
         topic_id=topic_id,
         assay=Assay(
             type="dose_response",
             readout="percent_activity",
-            target_chembl_id="CHEMBL0000",
+            target_chembl_id=target_chembl_id or "CHEMBL0000",
             compound_chembl_id="CHEMBL0000",
         ),
-        prior_ic50=PriorIC50(
-            median_nM=prior_median_nM,
-            n_measurements=6,
-            spread_log10=0.68,
-            source=Source(type=SourceType.CHEMBL_ACTIVITY, id="placeholder"),
-        ),
-        dilution=Dilution(top_nM=12000, factor=3, points=10),
+        prior_ic50=prior_model,
+        dilution=Dilution(top_nM=top_nM, factor=3, points=10),
         replicates=3,
         controls=Controls(positive_wells=4, negative_wells=4),
         plate=Plate(labware="corning_96_wellplate_360ul_flat", layout="randomized"),

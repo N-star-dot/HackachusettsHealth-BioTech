@@ -25,13 +25,55 @@ from backend.contracts.common import SourceType
 from backend.safety import check_topic_safety
 
 
-def _counts_from_source(query: str) -> tuple[TopicRef, list[YearCount]]:
-    """Placeholder yearly counts. Real version calls pipeline.ingest.openalex."""
+def _placeholder_counts(query: str) -> tuple[TopicRef, list[YearCount]]:
+    """Offline/empty fallback so the pipeline never hard-fails without real data."""
     topic = TopicRef(openalex_id="T00000", name=query[:60] or "placeholder topic")
     counts = [
         YearCount(year=y, works=max(50, 800 - (2024 - y) * 40),
                   source=Source(type=SourceType.OPENALEX, id=topic.openalex_id))
         for y in range(2015, 2025)
+    ]
+    return topic, counts
+
+
+def _counts_from_source(query: str) -> tuple[TopicRef, list[YearCount]]:
+    """Real yearly counts from OpenAlex (cached). Falls back to placeholders when the
+    source returns nothing (offline cache miss handled upstream, or an empty result).
+
+    This wires stage 1 to real publication data; the momentum *model* (`_momentum`)
+    stays untouched and simply consumes whatever counts come back.
+    """
+    # Imported here so `backend` has no hard import-time dependency on `pipeline`.
+    from pipeline.ingest import openalex
+
+    try:
+        hits = openalex.search_topics(query, per_page=10)
+    except Exception:  # noqa: BLE001 - any ingest failure falls back to placeholders
+        hits = []
+    if not hits:
+        return _placeholder_counts(query)
+
+    top = hits[0]
+    topic_id = str(top.get("id", "")).rsplit("/", 1)[-1] or "T00000"
+    topic = TopicRef(openalex_id=topic_id, name=top.get("display_name") or query[:60])
+
+    try:
+        rows = openalex.works_by_year(top["id"])
+    except Exception:  # noqa: BLE001 - any ingest failure falls back to placeholders
+        rows = []
+    if not rows:
+        # keep the real topic ref but fall back to placeholder counts
+        _, counts = _placeholder_counts(query)
+        return topic, [
+            YearCount(year=c.year, works=c.works,
+                      source=Source(type=SourceType.OPENALEX, id=topic_id))
+            for c in counts
+        ]
+
+    counts = [
+        YearCount(year=r["year"], works=r["works"],
+                  source=Source(type=SourceType.OPENALEX, id=topic_id))
+        for r in rows
     ]
     return topic, counts
 

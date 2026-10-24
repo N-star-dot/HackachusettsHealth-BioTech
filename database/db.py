@@ -20,6 +20,7 @@ from typing import Any
 
 _SCHEMA_PATH = Path(__file__).with_name("schema.sql")
 _DEFAULT_DB = Path(__file__).with_name("app.db")
+_SEED_DIR = Path(__file__).with_name("seed")  # committed offline cache seed (JSON per source)
 
 
 def _db_path() -> Path:
@@ -49,6 +50,23 @@ class Database:
         ).fetchone()
         return json.loads(row["response"]) if row else None
 
+    def cache_get_meta(
+        self, source: str, request_key: str
+    ) -> tuple[Any, str] | None:
+        """Like `cache_get` but also returns the stored `fetched_at` timestamp.
+
+        Returns `(response, fetched_at)` or `None` on a miss. Used by the ingest
+        cache layer to honour a TTL (compare `fetched_at` to now). `fetched_at` is
+        the ISO-8601 UTC string written by `cache_put`.
+        """
+        row = self._conn.execute(
+            "SELECT response, fetched_at FROM api_cache WHERE source=? AND request_key=?",
+            (source, request_key),
+        ).fetchone()
+        if row is None:
+            return None
+        return json.loads(row["response"]), row["fetched_at"]
+
     def cache_put(
         self, source: str, request_key: str, response: Any, status_code: int = 200
     ) -> None:
@@ -62,6 +80,63 @@ class Database:
             (source, request_key, json.dumps(response), status_code, _now()),
         )
         self._conn.commit()
+
+    def load_seed(self, seed_dir: str | Path | None = None) -> int:
+        """Populate `api_cache` from committed seed files so the demo runs offline.
+
+        Reads every `<source>.json` under `seed_dir` (default `database/seed/`). Each
+        file is a JSON list of records: {"request_key", "response", "status_code"?}.
+        The source name is taken from the file stem. Upserts via `cache_put`, so
+        loading twice is a no-op. Missing dir or files => nothing loaded, no error.
+        Returns the number of cache rows written.
+        """
+        directory = Path(seed_dir) if seed_dir else _SEED_DIR
+        if not directory.is_dir():
+            return 0
+        loaded = 0
+        for path in sorted(directory.glob("*.json")):
+            source = path.stem
+            try:
+                records = json.loads(path.read_text())
+            except (json.JSONDecodeError, OSError):
+                continue
+            if not isinstance(records, list):
+                continue
+            for rec in records:
+                if not isinstance(rec, dict) or "request_key" not in rec:
+                    continue
+                self.cache_put(
+                    source,
+                    rec["request_key"],
+                    rec.get("response"),
+                    status_code=int(rec.get("status_code", 200) or 200),
+                )
+                loaded += 1
+        return loaded
+
+    def cache_all(self, source: str | None = None) -> list[dict[str, Any]]:
+        """Return all api_cache rows (optionally for one source) as dicts with the
+        parsed `response`. Used by scripts/seed_cache.py to export seed files."""
+        if source is None:
+            rows = self._conn.execute(
+                "SELECT source, request_key, response, status_code FROM api_cache "
+                "ORDER BY source, request_key"
+            ).fetchall()
+        else:
+            rows = self._conn.execute(
+                "SELECT source, request_key, response, status_code FROM api_cache "
+                "WHERE source=? ORDER BY request_key",
+                (source,),
+            ).fetchall()
+        out: list[dict[str, Any]] = []
+        for r in rows:
+            out.append({
+                "source": r["source"],
+                "request_key": r["request_key"],
+                "response": json.loads(r["response"]),
+                "status_code": r["status_code"],
+            })
+        return out
 
     # --- runs & reports ----------------------------------------------------
     def create_run(self, query: str, run_id: str | None = None) -> str:
@@ -136,9 +211,27 @@ def get_db() -> Database:
     return _singleton
 
 
-def init_db(path: str | Path | None = None) -> Database:
-    """Create the DB and apply the schema. Used by scripts/setup."""
-    return Database(path)
+def init_db(path: str | Path | None = None, seed: bool = True) -> Database:
+    """Create the DB, apply the schema, and (by default) load the offline cache seed.
+
+    Seeding makes a fresh clone demo-ready in one command: the committed
+    `database/seed/*.json` are poured into `api_cache` so the pipeline can run offline.
+    Pass `seed=False` to skip it (e.g. throwaway test DBs). A missing/empty seed dir is
+    a no-op. Returns the `Database` handle.
+    """
+    db = Database(path)
+    if seed:
+        db.load_seed()
+    return db
+
+
+def load_seed(db: Database | None = None, seed_dir: str | Path | None = None) -> int:
+    """Load the committed offline cache seed into `db` (default: the shared handle).
+
+    Convenience wrapper over `Database.load_seed`. Returns the number of rows loaded.
+    """
+    db = db or get_db()
+    return db.load_seed(seed_dir)
 
 
 def _now() -> str:
