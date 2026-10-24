@@ -1,0 +1,32 @@
+.wrap { display: flex; flex-direction: column; gap: var(--space-3); }
+.title { font-size: 24px; line-height: 30px; font-weight: 600; }
+
+.table { width: 100%; border-collapse: collapse; }
+.table td, .table th { padding: var(--space-2) var(--space-2); vertical-align: middle; text-align: left; }
+
+.axis { font-weight: 450; }
+.axis .meaning { display: block; font-size: 12px; color: var(--graphite); font-weight: 400; }
+
+.valCell { width: 120px; }
+.bar { height: 6px; background: var(--rule); border-radius: 3px; overflow: hidden; }
+.fill { height: 100%; background: var(--ink); }
+.val { display: inline-block; margin-top: 2px; font-size: 14px; }
+
+.assumed .fill { background: none; outline: 1px dotted var(--graphite); }
+
+.sliderCell { width: 160px; }
+.slider { position: relative; display: flex; align-items: center; width: 120px; height: 20px; }
+.track { position: relative; flex: 1; height: 2px; background: var(--rule); border-radius: 2px; }
+.range { position: absolute; height: 100%; background: var(--ink); border-radius: 2px; }
+.thumb {
+  display: block; width: 16px; height: 16px; background: var(--sheet);
+  border: 2px solid var(--ink); border-radius: 50%;
+}
+.shareLabel { margin-left: var(--space-2); font-size: 13px; color: var(--graphite); }
+
+.contrib { width: 48px; font-size: 14px; color: var(--graphite); }
+
+.totalRow { display: flex; align-items: baseline; gap: var(--space-3); margin-top: var(--space-2); }
+.totalLabel { font-size: 14px; color: var(--graphite); }
+.total { font-size: 48px; line-height: 52px; font-weight: 700; font-stretch: 118%; }
+.reset { margin-left: auto; background: none; border: none; color: var(--ink); text-decoration: underline; font-size: 14px; }
