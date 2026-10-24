@@ -8,6 +8,7 @@ import { DesignSection } from "./components/Design/DesignSection";
 import { ReviewThread } from "./components/Review/ReviewThread";
 import { RobotSection } from "./components/Robot/RobotSection";
 import { UncertaintySection } from "./components/Uncertainty/UncertaintySection";
+import { LabControls } from "./components/Controls/LabControls";
 import { useRun } from "./hooks/useRun";
 import { useHealth } from "./api/queries";
 import { loadRecordedIndex, type RecordedIndexEntry } from "./api/recorded";
@@ -62,6 +63,9 @@ export function App() {
 
         <aside className={styles.bench}>
           <DeckPlaceholder />
+          {run && !blocked && run.design && run.uncertainty && (
+            <LabControls design={run.design} report={run.uncertainty} />
+          )}
         </aside>
       </div>
     </div>
