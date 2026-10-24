@@ -1,0 +1,21 @@
+.section { display: flex; flex-direction: column; gap: var(--space-3); }
+.title { font-size: 20px; line-height: 26px; font-weight: 600; }
+.summary { font-size: 14px; color: var(--graphite); }
+.alert { font-size: 14px; color: var(--flag); }
+
+.turn { display: flex; flex-direction: column; gap: var(--space-1); padding-left: var(--space-3); border-left: 1px solid var(--rule); }
+.role { font-size: 12px; font-stretch: 75%; font-weight: 500; color: var(--graphite); }
+
+.claim { font-size: 14px; line-height: 20px; }
+.quote { margin: 0; font-size: 18px; line-height: 28px; }
+.pmid { font-size: 13px; color: var(--graphite); }
+
+.modelNote { font-size: 14px; color: var(--graphite); }
+.modelLabel { font-size: 12px; color: var(--graphite); font-style: italic; }
+.verdict { font-size: 13px; }
+
+.reason { font-size: 13px; color: var(--flag); }
+
+.rules { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.pass { color: var(--ok); }
+.fail { color: var(--flag); }

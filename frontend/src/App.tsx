@@ -5,6 +5,7 @@ import { Banner } from "./components/Shell/Banner";
 import { DeckPlaceholder } from "./components/Bench/DeckPlaceholder";
 import { TopicSection } from "./components/Topic/TopicSection";
 import { DesignSection } from "./components/Design/DesignSection";
+import { ReviewThread } from "./components/Review/ReviewThread";
 import { useRun } from "./hooks/useRun";
 import { useHealth } from "./api/queries";
 import { loadRecordedIndex, type RecordedIndexEntry } from "./api/recorded";
@@ -46,6 +47,7 @@ export function App() {
               {isRunning && <p className={styles.running}>Running all four stages. Usually a few seconds, longer on the first run of the day.</p>}
               {topic && <TopicSection topic={topic} />}
               {run.design && <DesignSection design={run.design} pair={run.pair} />}
+              {run.design && <ReviewThread design={run.design} />}
               {/* stages 3-4 render here as later P0 tasks land */}
             </div>
           )}
