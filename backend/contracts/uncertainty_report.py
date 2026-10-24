@@ -10,6 +10,7 @@ from __future__ import annotations
 from pydantic import BaseModel, Field
 
 from backend.contracts.common import Source
+from backend.contracts.experiment_design import ExperimentDesign
 
 
 class NoiseModel(BaseModel):
@@ -42,6 +43,8 @@ class NextExperiment(BaseModel):
     extra_compound_uL: float = Field(default=0.0)
     extra_plates: int = Field(default=0)
     score: float = Field(..., description="Fold-error reduction per unit cost. Higher ranks first.")
+    design: ExperimentDesign | None = Field(default=None, description="The candidate design (B1.2).")
+    p90_after: float | None = Field(default=None, description="The candidate's p90 fold error (B1.2).")
 
 
 class UncertaintyReport(BaseModel):
