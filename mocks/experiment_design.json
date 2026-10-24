@@ -1,0 +1,16 @@
+{
+  "design_id": "d-001",
+  "topic_id": "T00000",
+  "assay": {"type": "dose_response", "readout": "percent_activity",
+            "target_chembl_id": "CHEMBL0000", "compound_chembl_id": "CHEMBL0000"},
+  "prior_ic50": {"median_nM": 120, "n_measurements": 6, "spread_log10": 0.68,
+                 "source": {"type": "chembl_activity", "id": "placeholder"}},
+  "dilution": {"top_nM": 12000, "factor": 3, "points": 10},
+  "replicates": 3,
+  "controls": {"positive_wells": 4, "negative_wells": 4},
+  "plate": {"labware": "corning_96_wellplate_360ul_flat", "layout": "randomized"},
+  "volumes_uL": {"transfer": 50, "diluent": 100},
+  "pipette": "flex_1channel_1000",
+  "tiprack": "opentrons_flex_96_tiprack_200ul",
+  "rationale": [{"claim": "placeholder claim", "pmid": "00000000", "verified": false}]
+}

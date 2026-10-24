@@ -1,0 +1,19 @@
+{
+  "query": "kinase inhibitors for liver fibrosis",
+  "topic": {"openalex_id": "T00000", "name": "placeholder topic"},
+  "counts_by_year": [
+    {"year": 2019, "works": 812, "source": {"type": "openalex", "id": "T00000"}},
+    {"year": 2020, "works": 905, "source": {"type": "openalex", "id": "T00000"}},
+    {"year": 2021, "works": 1010, "source": {"type": "openalex", "id": "T00000"}}
+  ],
+  "momentum": {"p_growth": 0.71, "model": "hgb-v1"},
+  "neighbors": [
+    {"openalex_id": "T00001", "name": "placeholder neighbor", "works_last_5y": 340, "p_growth": 0.64}
+  ],
+  "matrix": {
+    "momentum": 0.71, "novelty": 0.55, "evidence": 0.40, "automatable": 1, "cost_time": 0.62,
+    "weights": {"momentum": 0.2, "novelty": 0.2, "evidence": 0.2, "automatable": 0.2, "cost_time": 0.2},
+    "total": 0.656
+  },
+  "safety": {"pass": true, "reasons": []}
+}

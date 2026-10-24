@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Env & secrets
+.env
+*.local
+
+# OS / editor
+.DS_Store
+*.swp
+
+# Test / coverage
+.pytest_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+
+# Generated protocol outputs (keep the folder via .gitkeep)
+protocols/*.py
+
+# Local SQLite database file (schema is committed, data is not)
+database/app.db
+database/*.db-journal
+
+# NOTE: .kiro/ is intentionally NOT ignored. It must be committed per the rules.
