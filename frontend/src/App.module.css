@@ -19,17 +19,25 @@
   z-index: 50;
 }
 
-/* Two columns at >=1200px: notebook (fluid) + bench (sticky). */
+/* W1.6: one centered page container so the notebook and bench sit together instead of
+ *  pinned to opposite edges with dead space between them. */
+.container {
+  max-width: 1560px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Two columns: notebook (fluid, prose caps itself) + a fixed sticky bench. */
 .columns {
   display: grid;
-  grid-template-columns: 1fr 480px;
-  gap: var(--space-8);
+  grid-template-columns: minmax(0, 1fr) 520px;
+  gap: var(--space-12);
   padding: var(--space-8) var(--space-6);
   align-items: start;
 }
 
 .notebook {
-  max-width: 68ch;
+  max-width: 900px;
 }
 
 .bench {
@@ -38,11 +46,12 @@
 }
 
 @media (max-width: 1199px) {
-  .columns { grid-template-columns: 1fr 400px; }
+  .columns { grid-template-columns: minmax(0, 1fr) 440px; gap: var(--space-8); }
 }
 
 @media (max-width: 899px) {
   .columns { grid-template-columns: 1fr; }
+  .notebook { max-width: none; }
   .bench { position: static; }
 }
 

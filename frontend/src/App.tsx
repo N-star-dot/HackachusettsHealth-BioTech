@@ -25,7 +25,16 @@ import { useUIStore } from "./state/store";
 import styles from "./App.module.css";
 
 export function App() {
-  const { run, origin, start, openRecorded, openRunId, isRunning, error, setRun } = useRun();
+  const {
+    run,
+    origin,
+    start,
+    openRecorded,
+    openRunId,
+    isRunning,
+    error,
+    setRun,
+  } = useRun();
   const health = useHealth();
   const question = useUIStore((s) => s.question);
   const setQuestion = useUIStore((s) => s.setQuestion);
@@ -37,7 +46,9 @@ export function App() {
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => { loadRecordedIndex().then(setRecorded); }, []);
+  useEffect(() => {
+    loadRecordedIndex().then(setRecorded);
+  }, []);
 
   useEffect(() => {
     const p = new URLSearchParams(window.location.search);
@@ -58,15 +69,21 @@ export function App() {
   }, [run, blocked, loadRun]);
 
   const design = active?.baseDesign ?? run?.design ?? null;
-  const activeDesignVal = active ? applyWhatIf(active.baseDesign, active.patch).design : design;
+  const activeDesignVal = active
+    ? applyWhatIf(active.baseDesign, active.patch).design
+    : design;
   const report = active?.report ?? run?.uncertainty ?? null;
   const sim = active?.sim ?? run?.sim ?? null;
 
   useEffect(() => {
     if (run && topic && !blocked && run.uncertainty) {
       pushHistory({
-        runId: run.run_id, question: topic.query, topicName: topic.topic.name,
-        viability: topic.matrix.total, p90: run.uncertainty.fold_error.p90, at: Date.now(),
+        runId: run.run_id,
+        question: topic.query,
+        topicName: topic.topic.name,
+        viability: topic.matrix.total,
+        p90: run.uncertainty.fold_error.p90,
+        at: Date.now(),
       });
     }
   }, [run, topic, blocked]);
@@ -86,7 +103,10 @@ export function App() {
     }
   }, [run, topic]);
 
-  const runQuestion = (q: string) => { setQuestion(q); start(q); };
+  const runQuestion = (q: string) => {
+    setQuestion(q);
+    start(q);
+  };
   const pivot = (name: string) => runQuestion(name);
 
   const newQuestion = () => {
@@ -107,9 +127,12 @@ export function App() {
     });
   };
 
-  const status = origin === "recorded"
-    ? "Recorded run"
-    : serverDown ? "Can't reach server" : "Connected";
+  const status =
+    origin === "recorded"
+      ? "Recorded run"
+      : serverDown
+        ? "Can't reach server"
+        : "Connected";
 
   return (
     <div className={styles.app}>
@@ -126,7 +149,11 @@ export function App() {
         hasRun={!!run}
       />
 
-      {toast && <div className={styles.toast} role="status">{toast}</div>}
+      {toast && (
+        <div className={styles.toast} role="status">
+          {toast}
+        </div>
+      )}
 
       <HistoryDrawer
         open={historyOpen}
@@ -135,53 +162,97 @@ export function App() {
         onAsk={runQuestion}
       />
 
-      <div className={styles.columns} ref={scrollRef}>
-        <main className={styles.notebook}>
-          {serverDown && !run && (
-            <Banner kind="down" recorded={recorded} onOpenRecorded={openRecorded} />
-          )}
+      <div className={styles.container}>
+        <div className={styles.columns} ref={scrollRef}>
+          <main className={styles.notebook}>
+            {serverDown && !run && (
+              <Banner
+                kind="down"
+                recorded={recorded}
+                onOpenRecorded={openRecorded}
+              />
+            )}
 
-          {!run && !isRunning ? (
-            <StartScreen onRun={runQuestion} />
-          ) : blocked ? (
-            <BlockedPanel reasons={topic?.safety.reasons ?? []} onAsk={newQuestion} />
-          ) : (
-            <div className={styles.stages}>
-              <StageStrip run={run} isRunning={isRunning} />
-              <TryAnother topic={topic} onPick={pivot} />
-              {topic && (
-                <RevealStage order={0}>
-                  <TopicSection topic={topic} />
-                  <NeighborList topic={topic} onExplore={pivot} />
-                </RevealStage>
-              )}
-              {activeDesignVal && <RevealStage order={1}><DesignSection design={activeDesignVal} pair={run?.pair} /></RevealStage>}
-              {activeDesignVal && <RevealStage order={1}><ReviewThread design={activeDesignVal} /></RevealStage>}
-              {sim && <RevealStage order={2}><RobotSection sim={sim} /></RevealStage>}
-              {report && <RevealStage order={3}><UncertaintySection report={report} /></RevealStage>}
-            </div>
-          )}
+            {!run && !isRunning ? (
+              <StartScreen onRun={runQuestion} />
+            ) : blocked ? (
+              <BlockedPanel
+                reasons={topic?.safety.reasons ?? []}
+                onAsk={newQuestion}
+              />
+            ) : (
+              <div className={styles.stages}>
+                <StageStrip run={run} isRunning={isRunning} />
+                <TryAnother topic={topic} onPick={pivot} />
+                {topic && (
+                  <RevealStage order={0}>
+                    <TopicSection topic={topic} />
+                    <NeighborList topic={topic} onExplore={pivot} />
+                  </RevealStage>
+                )}
+                {activeDesignVal && (
+                  <RevealStage order={1}>
+                    <DesignSection design={activeDesignVal} pair={run?.pair} />
+                  </RevealStage>
+                )}
+                {activeDesignVal && (
+                  <RevealStage order={1}>
+                    <ReviewThread design={activeDesignVal} />
+                  </RevealStage>
+                )}
+                {sim && (
+                  <RevealStage order={2}>
+                    <RobotSection sim={sim} />
+                  </RevealStage>
+                )}
+                {report && (
+                  <RevealStage order={3}>
+                    <UncertaintySection report={report} />
+                  </RevealStage>
+                )}
+              </div>
+            )}
 
-          {!!error && !run && (
-            <p className={styles.error}>Couldn't run: {errorMessage(error)}</p>
-          )}
-        </main>
+            {!!error && !run && (
+              <p className={styles.error}>
+                Couldn't run: {errorMessage(error)}
+              </p>
+            )}
+          </main>
 
-        <aside className={styles.bench}>
-          {sim && !blocked ? <Deck sim={sim} design={activeDesignVal ?? design} /> : <DeckPlaceholder />}
-          {!blocked && active && <LabControls />}
-        </aside>
+          <aside className={styles.bench}>
+            {sim && !blocked ? (
+              <Deck sim={sim} design={activeDesignVal ?? design} />
+            ) : (
+              <DeckPlaceholder />
+            )}
+            {!blocked && active && <LabControls />}
+          </aside>
+        </div>
       </div>
     </div>
   );
 }
 
-function BlockedPanel({ reasons, onAsk }: { reasons: string[]; onAsk: () => void }) {  return (
+function BlockedPanel({
+  reasons,
+  onAsk,
+}: {
+  reasons: string[];
+  onAsk: () => void;
+}) {
+  return (
     <div className={styles.blocked}>
       <h2>Lab Planner doesn't design experiments for this topic.</h2>
-      <ul>{reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
+      <ul>
+        {reasons.map((r, i) => (
+          <li key={i}>{r}</li>
+        ))}
+      </ul>
       <p>It designs in-vitro dose-response experiments for benign targets.</p>
-      <button className={styles.askDifferent} onClick={onAsk}>Ask a different question</button>
+      <button className={styles.askDifferent} onClick={onAsk}>
+        Ask a different question
+      </button>
     </div>
   );
 }
