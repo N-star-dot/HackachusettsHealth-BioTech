@@ -26,24 +26,31 @@ def design_fold_error() -> dict:
 def calibration_coverage() -> dict:
     """Metric: calibration coverage against REAL ChEMBL IC50 measurement groups.
 
-    Pulls groups from the calibration_groups table (populated by
-    scripts/build_calibration_data.py). Falls back to synthetic lognormal groups only
-    if the table is empty, clearly labelling which source was used.
+    Reports coverage at the PUBLISHED spread (0.68) with no widening, plus the pooled
+    within-group SD. Pulls groups from calibration_groups (one value per paper, >=3 papers).
+    Falls back to synthetic groups only if the table is empty, clearly labelled.
     """
+    from backend.stage4_uncertainty import pooled_within_group_sd
     from database import get_db
 
     rows = get_db().all_calibration_groups()
     real_groups = [r["values_nM"] for r in rows if len(r["values_nM"]) >= 3]
 
     if real_groups:
-        cal = coverage_90(real_groups)
-        return {"coverage_90": cal.coverage_90, "pairs": cal.pairs, "data": "real ChEMBL"}
+        cal = coverage_90(real_groups, spread_log10=0.68)
+        pooled = pooled_within_group_sd(real_groups)
+        return {
+            "coverage_at_0.68": cal.coverage_90,
+            "pooled_within_group_sd": round(pooled, 3),
+            "pairs": cal.pairs,
+            "data": "real ChEMBL (assay B, wild-type, paper-collapsed)",
+        }
 
-    # fallback: synthetic, clearly labelled (run build_calibration_data.py for real)
     rng = np.random.default_rng(0)
     groups = [list(10 ** rng.normal(2.0, 0.68, size=5)) for _ in range(200)]
-    cal = coverage_90(groups)
-    return {"coverage_90": cal.coverage_90, "pairs": cal.pairs, "data": "SYNTHETIC (run build_calibration_data.py)"}
+    cal = coverage_90(groups, spread_log10=0.68)
+    return {"coverage_at_0.68": cal.coverage_90, "pairs": cal.pairs,
+            "data": "SYNTHETIC (run build_calibration_data.py)"}
 
 
 def simulator_pass_rate() -> dict:

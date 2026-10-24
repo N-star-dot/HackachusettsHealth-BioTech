@@ -47,6 +47,11 @@ class Database:
         cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(topic_features)")}
         if "growth" not in cols:
             self._conn.execute("ALTER TABLE topic_features ADD COLUMN growth REAL")
+        cal_cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(calibration_groups)")}
+        if cal_cols and "document_ids" not in cal_cols:
+            self._conn.execute(
+                "ALTER TABLE calibration_groups ADD COLUMN document_ids TEXT NOT NULL DEFAULT '[]'"
+            )
 
     # --- api cache ---------------------------------------------------------
     def cache_get(self, source: str, request_key: str) -> dict[str, Any] | None:
@@ -132,17 +137,18 @@ class Database:
     # --- calibration groups (real ChEMBL IC50 measurement groups) ---------
     def upsert_calibration_group(
         self, target_chembl_id: str, molecule_chembl_id: str,
-        values_nM: list[float], activity_ids: list,
+        values_nM: list[float], activity_ids: list, document_ids: list | None = None,
     ) -> None:
         self._conn.execute(
             """INSERT INTO calibration_groups(
-                   target_chembl_id, molecule_chembl_id, values_nM, activity_ids, updated_at)
-               VALUES(?,?,?,?,?)
+                   target_chembl_id, molecule_chembl_id, values_nM, activity_ids,
+                   document_ids, updated_at)
+               VALUES(?,?,?,?,?,?)
                ON CONFLICT(target_chembl_id, molecule_chembl_id) DO UPDATE SET
                  values_nM=excluded.values_nM, activity_ids=excluded.activity_ids,
-                 updated_at=excluded.updated_at""",
+                 document_ids=excluded.document_ids, updated_at=excluded.updated_at""",
             (target_chembl_id, molecule_chembl_id, json.dumps(values_nM),
-             json.dumps(activity_ids), _now()),
+             json.dumps(activity_ids), json.dumps(document_ids or []), _now()),
         )
         self._conn.commit()
 
@@ -153,6 +159,7 @@ class Database:
             d = dict(r)
             d["values_nM"] = json.loads(d["values_nM"])
             d["activity_ids"] = json.loads(d["activity_ids"])
+            d["document_ids"] = json.loads(d.get("document_ids") or "[]")
             out.append(d)
         return out
 

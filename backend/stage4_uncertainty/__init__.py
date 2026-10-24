@@ -4,6 +4,7 @@ from backend.stage4_uncertainty.calibration import (
     calibrate,
     coverage_90,
     load_calibration_groups,
+    pooled_within_group_sd,
     widen_until_calibrated,
 )
 from backend.stage4_uncertainty.engine import hill, run_uncertainty
@@ -16,5 +17,6 @@ __all__ = [
     "coverage_90",
     "calibrate",
     "load_calibration_groups",
+    "pooled_within_group_sd",
     "widen_until_calibrated",
 ]

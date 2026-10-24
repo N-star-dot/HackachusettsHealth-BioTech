@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS calibration_groups (
     molecule_chembl_id TEXT NOT NULL,
     values_nM          TEXT NOT NULL,        -- JSON list of IC50 values (nM), >=3 of them
     activity_ids       TEXT NOT NULL,        -- JSON list of ChEMBL activity ids (provenance)
+    document_ids       TEXT NOT NULL DEFAULT '[]',  -- JSON list of source document ids (>=2 distinct)
     updated_at         TEXT NOT NULL DEFAULT (datetime('now')),
     PRIMARY KEY (target_chembl_id, molecule_chembl_id)
 );
