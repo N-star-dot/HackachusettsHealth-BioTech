@@ -23,6 +23,8 @@ import { gateOk } from "./api/normalize";
 import { pushHistory } from "./lib/history";
 import { applyWhatIf } from "./lib/whatif";
 import { useUIStore } from "./state/store";
+import { useWhatIf } from "./hooks/useWhatIf";
+import { FeedbackCard } from "./components/Feedback/FeedbackCard";
 import styles from "./App.module.css";
 
 export function App() {
@@ -41,6 +43,7 @@ export function App() {
   const setQuestion = useUIStore((s) => s.setQuestion);
   const loadRun = useUIStore((s) => s.loadRun);
   const active = useUIStore((s) => s.active);
+  const whatIf = useWhatIf();
   const [recorded, setRecorded] = useState<RecordedIndexEntry[]>([]);
   const [shared, setShared] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -109,6 +112,14 @@ export function App() {
     start(q);
   };
   const pivot = (name: string) => runQuestion(name);
+
+  // Apply a feedback recommendation as a what-if (sets the draft and runs the server call).
+  const applyFeedback = (patch: { top_nM?: number; factor?: number; points?: number; replicates?: number }) => {
+    whatIf.setPatch({ ...whatIf.patch, ...patch });
+    whatIf.commit();
+    scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
 
   const newQuestion = () => {
     setRun(null);
@@ -211,6 +222,15 @@ export function App() {
                 {report && (
                   <RevealStage order={3}>
                     <UncertaintySection report={report} />
+                  </RevealStage>
+                )}
+                {report && activeDesignVal && (
+                  <RevealStage order={3}>
+                    <FeedbackCard
+                      design={activeDesignVal}
+                      report={report}
+                      onApply={applyFeedback}
+                    />
                   </RevealStage>
                 )}
               </div>

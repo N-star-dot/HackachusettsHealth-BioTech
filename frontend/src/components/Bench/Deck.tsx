@@ -42,7 +42,8 @@ export function Deck({ sim, design }: Props) {
         />
       )}
       <p className={styles.caption}>
-        Flex deck. {sim?.deck?.length ? "Layout from the simulator." : "Fixed compiler layout."}
+        Flex deck, {12 - loaded.size} of 12 slots free.{" "}
+        {sim?.deck?.length ? "Layout from the simulator." : "Fixed compiler layout."}
       </p>
       <ul className={styles.legend}>
         {[...loaded.values()].map((s) => (

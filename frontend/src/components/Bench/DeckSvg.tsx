@@ -76,15 +76,23 @@ export function DeckSvg({ deck, state, step, ic50NM, reduced }: Props) {
       {["A1","A2","A3","B1","B2","B3","C1","C2","C3","D1","D2","D3"].map((slot) => {
         const o = slotOrigin(slot);
         const item = bySlot.get(slot);
+        const empty = !item;
         return (
           <g key={slot}>
             <rect x={o.x} y={o.y} width={SLOT_W} height={SLOT_H} rx={6}
-                  fill={item ? "var(--slot)" : "none"} stroke="var(--rule)" strokeWidth={0.8} />
+                  fill={empty ? "none" : "var(--slot)"}
+                  stroke="var(--rule)" strokeWidth={0.8}
+                  strokeDasharray={empty ? "4 4" : undefined}
+                  opacity={empty ? 0.5 : 1} />
             <text x={o.x + 3} y={o.y + 7} className={styles.slotLabel}>{slot}</text>
             {item?.role === "tips" && <TipRack slot={slot} usedTips={state.tipsUsed} />}
             {item?.role === "plate" && <Plate slot={slot} wells={state.wells} ic50NM={ic50NM} />}
             {item?.role === "reservoir" && <Reservoir slot={slot} />}
             {item?.role === "trash" && <Trash slot={slot} />}
+            {empty && (
+              <text x={o.x + SLOT_W / 2} y={o.y + SLOT_H / 2 + 2}
+                    className={styles.freeLabel} textAnchor="middle">free</text>
+            )}
           </g>
         );
       })}
