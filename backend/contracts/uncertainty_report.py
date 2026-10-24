@@ -58,3 +58,6 @@ class UncertaintyReport(BaseModel):
     failed_fit_share: float = Field(..., ge=0.0, le=1.0)
     calibration: Calibration
     next_experiments: list[NextExperiment] = Field(default_factory=list)
+    # B1.3: raw samples (first <=300 runs) and the per-concentration activity band
+    samples: dict[str, list[float]] | None = Field(default=None)
+    curve: dict[str, list[float]] | None = Field(default=None)

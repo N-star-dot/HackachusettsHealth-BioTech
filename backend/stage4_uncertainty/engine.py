@@ -58,8 +58,9 @@ def _simulate_once(
     noise: NoiseModel,
     replicates: int,
     hill_slope: float = 1.0,
-) -> tuple[float, bool, bool]:
-    """One virtual experiment. Returns (recovered_ic50, outside_range, fit_failed, true_ic50)."""
+) -> tuple[float, bool, bool, float, np.ndarray]:
+    """One virtual experiment. Returns (recovered_ic50, outside_range, fit_failed,
+    true_ic50, y_obs) — y_obs is the observed % activity per nominal concentration."""
     # 1. true IC50 drawn from lab-to-lab spread (lognormal in log10 space)
     true_log10 = np.log10(prior_median_nM) + rng.normal(0, noise.lab_spread_log10)
     true_ic50 = 10**true_log10
@@ -88,7 +89,7 @@ def _simulate_once(
     except Exception:
         recovered, fit_failed = float("nan"), True
 
-    return (recovered if not fit_failed else true_ic50), outside, fit_failed, true_ic50
+    return (recovered if not fit_failed else true_ic50), outside, fit_failed, true_ic50, y_obs
 
 
 def run_uncertainty(
@@ -134,8 +135,14 @@ def run_uncertainty(
     fold_errors: list[float] = []
     outside_count = 0
     failed_count = 0
-    for _ in range(runs):
-        recovered, outside, failed, true_ic50 = _simulate_once(
+    # B1.3: keep the first min(runs, 300) samples and per-concentration readouts
+    sample_cap = min(runs, 300)
+    true_samples: list[float] = []
+    recovered_samples: list[float] = []
+    fe_samples: list[float] = []
+    y_obs_all: list[np.ndarray] = []
+    for i in range(runs):
+        recovered, outside, failed, true_ic50, y_obs = _simulate_once(
             rng, concentrations, design.prior_ic50.median_nM, noise, design.replicates
         )
         if failed:
@@ -144,12 +151,31 @@ def run_uncertainty(
             outside_count += 1
         fe = max(recovered / true_ic50, true_ic50 / recovered)
         fold_errors.append(fe)
+        if i < sample_cap:
+            true_samples.append(float(true_ic50))
+            recovered_samples.append(float(recovered))
+            fe_samples.append(float(fe))
+        y_obs_all.append(y_obs)
 
     fe_arr = np.array(fold_errors)
 
     calibration = (
         calibrate(spread) if calibrate_coverage else Calibration(coverage_90=0.0, pairs=0)
     )
+
+    # B1.3: per-nominal-concentration activity band (p10/p50/p90 over all runs)
+    y_stack = np.vstack(y_obs_all)
+    curve = {
+        "concentrations_nM": [float(c) for c in concentrations],
+        "activity_p10": [float(x) for x in np.percentile(y_stack, 10, axis=0)],
+        "activity_p50": [float(x) for x in np.percentile(y_stack, 50, axis=0)],
+        "activity_p90": [float(x) for x in np.percentile(y_stack, 90, axis=0)],
+    }
+    samples = {
+        "true_ic50_nM": true_samples,
+        "recovered_ic50_nM": recovered_samples,
+        "fold_error": fe_samples,
+    }
 
     report = UncertaintyReport(
         design_id=design.design_id,
@@ -162,5 +188,7 @@ def run_uncertainty(
         failed_fit_share=failed_count / runs,
         calibration=calibration,  # measured against real ChEMBL groups
         next_experiments=[],  # filled by planner.py (via the orchestrator)
+        samples=samples,
+        curve=curve,
     )
     return report
