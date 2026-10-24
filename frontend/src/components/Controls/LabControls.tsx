@@ -91,11 +91,18 @@ export function LabControls() {
 
       {report.next_experiments.length > 0 && (
         <div className={styles.suggestions}>
-          {report.next_experiments.map((ne, i) => (
-            <button key={i} className={styles.try} disabled={!ne.design} onClick={() => tryChange(ne)}>
-              Try: {ne.change}
-            </button>
-          ))}
+          {report.next_experiments.map((ne, i) => {
+            const worse = ne.p90_after != null && ne.p90_after >= report.fold_error.p90;
+            return (
+              <button key={i}
+                className={`${styles.try} ${worse ? styles.tryWorse : ""}`}
+                disabled={!ne.design || worse}
+                title={worse ? "This change makes p90 worse" : undefined}
+                onClick={() => tryChange(ne)}>
+                {worse ? `Skip: ${ne.change} (makes it worse)` : `Try: ${ne.change}`}
+              </button>
+            );
+          })}
         </div>
       )}
 

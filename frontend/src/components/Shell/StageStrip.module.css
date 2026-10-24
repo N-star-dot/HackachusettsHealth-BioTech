@@ -1,13 +1,17 @@
-.strip { display: flex; gap: var(--space-2); list-style: none; margin: 0 0 var(--space-6); padding: 0; }
+.strip { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; margin: 0 0 var(--space-6); padding: 0; }
 .stage {
   display: flex; align-items: baseline; gap: var(--space-2);
-  flex: 1; padding: var(--space-2) var(--space-3);
+  flex: 1 1 140px; min-width: 0; padding: var(--space-2) var(--space-3);
   border: 1px solid var(--rule); border-radius: var(--radius-button);
   background: var(--sheet);
 }
 .numeral { font-size: 20px; font-weight: 600; font-stretch: 112%; color: var(--graphite); }
-.label { font-size: 14px; color: var(--ink); }
-.state { margin-left: auto; font-size: 12px; color: var(--graphite); font-stretch: 75%; }
+.label { font-size: 14px; color: var(--ink); white-space: nowrap; }
+.state { margin-left: auto; font-size: 12px; color: var(--graphite); font-stretch: 75%; white-space: nowrap; }
+
+@media (max-width: 560px) {
+  .stage { flex: 1 1 calc(50% - var(--space-2)); }
+}
 
 .waiting { opacity: 0.6; }
 .running { border-color: var(--ink); }

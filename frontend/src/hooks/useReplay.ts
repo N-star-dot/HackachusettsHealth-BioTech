@@ -17,8 +17,8 @@ export function useReplay(steps: ProtocolStep[]) {
   const total = leaves.length;
 
   const tick = useCallback((ts: number) => {
-    // 1x: ~600ms/step; scaled by speed
-    const perStep = 600 / speed;
+    // 1x: ~400ms/step; scaled by speed. At 16x a ~400-step protocol finishes in ~10s.
+    const perStep = 400 / speed;
     if (ts - last.current >= perStep) {
       last.current = ts;
       setIndex((i) => {

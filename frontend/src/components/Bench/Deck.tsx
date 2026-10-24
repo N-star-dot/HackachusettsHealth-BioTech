@@ -31,7 +31,7 @@ export function Deck({ sim, design }: Props) {
   return (
     <div className={styles.bench}>
       {replayable ? (
-        <Replay sim={sim!} design={design!} />
+        <Replay key={sim!.design_id} sim={sim!} design={design!} />
       ) : (
         <DeckSvg
           deck={deck}

@@ -54,13 +54,13 @@ export function RobotSection({ sim }: Props) {
         <li>Tips: <Num value={String(sim.cost.tips)} provenance={costProv} /></li>
         <li>Compound: <Num value={uL(sim.cost.compound_uL)} provenance={costProv} /></li>
         <li>Plates: <Num value={String(sim.cost.plates)} provenance={costProv} /></li>
-        <li>Robot steps: <Num value={String(sim.cost.robot_steps)} provenance={costProv} /></li>
+        <li>Robot actions: <Num value={String(sim.cost.robot_steps)} provenance={costProv} /></li>
       </ul>
 
       {sim.steps.length > 0 && (
         <div>
           <button className={styles.toggle} onClick={() => setShowLog((v) => !v)}>
-            {showLog ? "Hide run log" : `Show run log (${sim.steps.length} steps)`}
+            {showLog ? "Hide full run log" : `Show full run log (${sim.simulator.log_lines} lines)`}
           </button>
           {showLog && (
             <ol className={styles.log}>

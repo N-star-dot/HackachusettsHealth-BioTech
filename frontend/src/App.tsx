@@ -42,6 +42,7 @@ export function App() {
   const question = useUIStore((s) => s.question);
   const setQuestion = useUIStore((s) => s.setQuestion);
   const loadRun = useUIStore((s) => s.loadRun);
+  const clearActive = useUIStore((s) => s.clearActive);
   const active = useUIStore((s) => s.active);
   const whatIf = useWhatIf();
   const [recorded, setRecorded] = useState<RecordedIndexEntry[]>([]);
@@ -123,6 +124,7 @@ export function App() {
 
   const newQuestion = () => {
     setRun(null);
+    clearActive();
     setQuestion("");
     setToast(null);
     lastRunId.current = null;

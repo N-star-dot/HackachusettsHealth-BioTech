@@ -23,6 +23,7 @@
 .suggestions { display: flex; flex-direction: column; gap: 4px; }
 .try { background: none; border: 1px solid var(--rule); border-radius: var(--radius-input); padding: 4px var(--space-2); font-size: 13px; color: var(--ink); text-align: left; }
 .try:disabled { opacity: 0.4; }
+.tryWorse { color: var(--graphite); border-style: dashed; }
 .pinRow { display: flex; align-items: center; gap: var(--space-2); }
 .pin { background: none; border: 1px solid var(--ink); border-radius: var(--radius-button); padding: 4px var(--space-3); font-size: 13px; color: var(--ink); }
 .pin:disabled { opacity: 0.4; }

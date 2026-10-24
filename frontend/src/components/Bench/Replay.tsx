@@ -82,7 +82,7 @@ export function Replay({ sim, design }: Props) {
         <div><dt>Tips</dt><dd>{state.tipsUsed}</dd></div>
         <div><dt>Compound</dt><dd>{uL(compoundMoved)}</dd></div>
         <div><dt>Wells filled</dt><dd>{wellsFilled}</dd></div>
-        <div><dt>Step</dt><dd>{Math.min(r.index + 1, r.total)} of {r.total}</dd></div>
+        <div><dt>Pipetting step</dt><dd>{Math.min(r.index + 1, r.total)} of {r.total}</dd></div>
       </dl>
 
       <div className={styles.controls}>

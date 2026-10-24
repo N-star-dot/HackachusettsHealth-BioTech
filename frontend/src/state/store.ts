@@ -58,6 +58,7 @@ interface UIState {
   removePin: (letter: string) => void;
   // W1.3 active-run actions
   loadRun: (run: RunResponse) => void;
+  clearActive: () => void;
   setPatch: (patch: WhatIfPatch) => void;
   resetPatch: () => void;
   keepAsBaseline: () => void;
@@ -91,6 +92,8 @@ export const useUIStore = create<UIState>((set, get) => ({
       return { pins: [...s.pins, { letter, compound, tips, p90 }] };
     }),
   removePin: (letter) => set((s) => ({ pins: s.pins.filter((p) => p.letter !== letter) })),
+
+  clearActive: () => set({ active: null, pins: [] }),
 
   loadRun: (run) => {
     // Only (re)seed when the run or its design actually changed, so re-renders of the
