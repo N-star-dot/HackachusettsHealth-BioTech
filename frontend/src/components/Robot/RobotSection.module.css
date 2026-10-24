@@ -1,0 +1,12 @@
+.section { display: flex; flex-direction: column; gap: var(--space-3); }
+.head { display: flex; align-items: baseline; gap: var(--space-3); }
+.numeral { font-size: 36px; line-height: 36px; font-stretch: 75%; font-weight: 500; color: var(--graphite); }
+.name { font-size: 24px; line-height: 30px; font-weight: 600; }
+.verdict { font-size: 16px; line-height: 24px; }
+.warn { color: var(--partial-text); }
+.fail { display: flex; flex-direction: column; gap: var(--space-2); color: var(--flag); }
+.error { font-family: ui-monospace, Menlo, monospace; font-size: 13px; background: var(--sheet); padding: var(--space-2); border-radius: var(--radius-input); white-space: pre-wrap; }
+.cost { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.toggle { background: none; border: none; color: var(--ink); text-decoration: underline; font-size: 14px; padding: 0; }
+.log { max-height: 240px; overflow: auto; font-size: 13px; color: var(--graphite); margin-top: var(--space-2); }
+.caption { font-size: 13px; color: var(--graphite); }

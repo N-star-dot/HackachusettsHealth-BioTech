@@ -6,6 +6,8 @@ import { DeckPlaceholder } from "./components/Bench/DeckPlaceholder";
 import { TopicSection } from "./components/Topic/TopicSection";
 import { DesignSection } from "./components/Design/DesignSection";
 import { ReviewThread } from "./components/Review/ReviewThread";
+import { RobotSection } from "./components/Robot/RobotSection";
+import { UncertaintySection } from "./components/Uncertainty/UncertaintySection";
 import { useRun } from "./hooks/useRun";
 import { useHealth } from "./api/queries";
 import { loadRecordedIndex, type RecordedIndexEntry } from "./api/recorded";
@@ -48,7 +50,8 @@ export function App() {
               {topic && <TopicSection topic={topic} />}
               {run.design && <DesignSection design={run.design} pair={run.pair} />}
               {run.design && <ReviewThread design={run.design} />}
-              {/* stages 3-4 render here as later P0 tasks land */}
+              {run.sim && <RobotSection sim={run.sim} />}
+              {run.uncertainty && <UncertaintySection report={run.uncertainty} />}
             </div>
           )}
 
