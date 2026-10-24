@@ -19,6 +19,7 @@ class SourceType(str, Enum):
     SPEC = "spec"  # a published vendor spec table, e.g. Opentrons pipettes
     SIMULATOR = "simulator"  # the Opentrons simulator
     SIMULATED = "simulated"  # synthetic values from our own Monte Carlo
+    ASSUMED = "assumed"  # a value we chose ourselves, not measured from this topic
 
 
 class Source(BaseModel):

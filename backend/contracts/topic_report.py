@@ -54,6 +54,10 @@ class ViabilityMatrix(BaseModel):
         }
     )
     total: float = Field(..., ge=0.0, le=1.0)
+    # per-axis provenance (B0.2). Keys are axis names; values tag where each axis value
+    # came from. Axes we haven't computed yet carry an 'assumed' Source.
+    axis_sources: dict[str, Source] = Field(default_factory=dict)
+    axis_notes: dict[str, str] = Field(default_factory=dict)
 
     @model_validator(mode="after")
     def _check_total(self) -> "ViabilityMatrix":
@@ -89,3 +93,7 @@ class TopicReport(BaseModel):
     neighbors: list[Neighbor] = Field(default_factory=list)
     matrix: ViabilityMatrix
     safety: SafetyGate
+    offline: bool = Field(
+        default=False,
+        description="True when OpenAlex was unreachable and counts are placeholders.",
+    )

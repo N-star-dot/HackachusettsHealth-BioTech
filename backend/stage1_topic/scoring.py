@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from backend.contracts import (
     Momentum,
-    Neighbor,
     SafetyGate,
     Source,
     TopicRef,
@@ -28,11 +27,20 @@ from backend.stage1_topic.features import compute_features, slope_baseline_score
 from backend.stage1_topic.momentum_model import MODEL_VERSION, predict_p_growth
 
 
+def _counts_url(openalex_id: str) -> str:
+    """The exact OpenAlex query works_by_year makes (B1.6)."""
+    return (f"https://api.openalex.org/works?filter=topics.id:{openalex_id},"
+            f"from_publication_date:2015-01-01,to_publication_date:2024-12-31"
+            f"&group_by=publication_year")
+
+
 def _placeholder_counts(query: str) -> tuple[TopicRef, list[YearCount], str | None]:
+    """Offline fallback. The invented series is labelled SIMULATED, never openalex, so the
+    dashboard can detect it and refuse to draw it as real data."""
     topic = TopicRef(openalex_id="T00000", name=query[:60] or "placeholder topic")
     counts = [
         YearCount(year=y, works=max(50, 800 - (2024 - y) * 40),
-                  source=Source(type=SourceType.OPENALEX, id=topic.openalex_id))
+                  source=Source(type=SourceType.SIMULATED, id="offline-placeholder"))
         for y in range(2015, 2025)
     ]
     return topic, counts, None
@@ -58,7 +66,7 @@ def _counts_from_source(query: str) -> tuple[TopicRef, list[YearCount], str | No
         rows = openalex.works_by_year(oa_id)
         counts = [
             YearCount(year=r["year"], works=r["works"],
-                      source=Source(type=SourceType.OPENALEX, id=oa_id))
+                      source=Source(type=SourceType.OPENALEX, id=oa_id, url=_counts_url(oa_id)))
             for r in rows
         ]
         if len(counts) < 3:
@@ -94,7 +102,13 @@ def score_topic(query: str, weights: dict[str, float] | None = None) -> TopicRep
     safety: SafetyGate = check_topic_safety(query)
 
     topic, counts, field = _counts_from_source(query)
-    momentum = _momentum(counts, field)
+    offline = topic.openalex_id == "T00000"
+
+    if offline:
+        # don't score an invented series with the model — say so plainly
+        momentum = Momentum(p_growth=0.5, model="offline-placeholder")
+    else:
+        momentum = _momentum(counts, field)
 
     weights = weights or {
         "momentum": 0.2, "novelty": 0.2, "evidence": 0.2, "automatable": 0.2, "cost_time": 0.2,
@@ -107,18 +121,42 @@ def score_topic(query: str, weights: dict[str, float] | None = None) -> TopicRep
         "cost_time": 0.62,
     }
     total = ViabilityMatrix.weighted_total(axes, weights)
-    matrix = ViabilityMatrix(**axes, weights=weights, total=round(total, 6))
 
-    neighbors = [
-        Neighbor(openalex_id="T00001", name="placeholder neighbor", works_last_5y=340, p_growth=0.64),
-    ]
+    # per-axis provenance (B0.2). Momentum traces to the model + OpenAlex counts; the
+    # other four are fixed priors until B1.5 computes them, so they carry 'assumed'.
+    axis_sources: dict[str, Source] = {
+        "novelty": Source(type=SourceType.ASSUMED, id="fixed-prior"),
+        "evidence": Source(type=SourceType.ASSUMED, id="fixed-prior"),
+        "automatable": Source(type=SourceType.ASSUMED, id="fixed-prior"),
+        "cost_time": Source(type=SourceType.ASSUMED, id="fixed-prior"),
+    }
+    axis_notes: dict[str, str] = {
+        k: "Fixed value, not computed from this topic yet"
+        for k in ("novelty", "evidence", "automatable", "cost_time")
+    }
+    if not offline:
+        axis_sources["momentum"] = Source(
+            type=SourceType.OPENALEX, id=topic.openalex_id, url=_counts_url(topic.openalex_id)
+        )
+        axis_notes["momentum"] = (
+            f"Trained model {MODEL_VERSION} scored this topic's 2015-2024 OpenAlex counts"
+        )
+
+    matrix = ViabilityMatrix(
+        **axes, weights=weights, total=round(total, 6),
+        axis_sources=axis_sources, axis_notes=axis_notes,
+    )
+
+    # Real neighbors arrive in B2.2; until then, send none rather than a placeholder.
+    neighbors: list = []
 
     return TopicReport(
         query=query,
         topic=topic,
         counts_by_year=counts,
         momentum=momentum,
-        neighbors=neighbors if safety.passed else [],
+        neighbors=neighbors,
         matrix=matrix,
         safety=safety,
+        offline=offline,
     )
