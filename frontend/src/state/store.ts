@@ -62,6 +62,7 @@ interface UIState {
   resetPatch: () => void;
   keepAsBaseline: () => void;
   applyReport: (report: UncertaintyReport) => void;
+  mergeNextExperiments: (reportWithPlan: UncertaintyReport) => void;
   applySim: (sim: SimResult) => void;
   cachedReport: (design: ExperimentDesign) => UncertaintyReport | undefined;
 }
@@ -175,6 +176,26 @@ export const useUIStore = create<UIState>((set, get) => ({
       const design = applyWhatIf(s.active.baseDesign, s.active.patch).design;
       if (sim.design_id !== design.design_id) return s;
       return { active: { ...s.active, sim } };
+    }),
+
+  mergeNextExperiments: (reportWithPlan) =>
+    set((s) => {
+      if (!s.active) return s;
+      // Only the planner's next_experiments; keep the fast report's fold_error etc. Guard
+      // the design_id so a late plan:true response can't attach to a newer draft.
+      const design = applyWhatIf(s.active.baseDesign, s.active.patch).design;
+      if (reportWithPlan.design_id !== design.design_id) return s;
+      const merged: UncertaintyReport = {
+        ...s.active.report,
+        next_experiments: reportWithPlan.next_experiments,
+      };
+      return {
+        active: {
+          ...s.active,
+          report: merged,
+          cache: { ...s.active.cache, [hash6(design)]: merged },
+        },
+      };
     }),
 
   cachedReport: (design) => get().active?.cache[hash6(design)],

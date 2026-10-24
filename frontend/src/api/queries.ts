@@ -7,6 +7,7 @@ import type {
   RunRecord,
   RunRequest,
   RunResponse,
+  SimResult,
   UncertaintyReport,
   WhatIfRequest,
 } from "./types";
@@ -39,6 +40,11 @@ export function useHealth() {
 /** Imperative what-if call (used by the lab controls with cancellation). */
 export function runUncertainty(req: WhatIfRequest, signal?: AbortSignal) {
   return api.post<UncertaintyReport>("/api/uncertainty", req, TIMEOUTS.uncertainty, signal);
+}
+
+/** Compile + simulate a what-if design so the bench gets cost and a replay (W1.4). */
+export function runSimulate(design: WhatIfRequest["design"], signal?: AbortSignal) {
+  return api.post<SimResult>("/api/simulate", { design }, TIMEOUTS.simulate, signal);
 }
 
 export function whatIfKey(req: WhatIfRequest): string {

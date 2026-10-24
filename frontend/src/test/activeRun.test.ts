@@ -108,4 +108,38 @@ describe("active run store (W1.3)", () => {
     expect(Object.keys(a.patch)).toHaveLength(0);
     expect(a.report.fold_error.p90).toBe(1.5);
   });
+
+  it("mergeNextExperiments keeps the fast fold_error and swaps only best-next-changes (W1.4)", () => {
+    const s = useUIStore.getState();
+    s.loadRun(run);
+    s.setPatch({ points: 8 });
+    const draft = activeDesign(useUIStore.getState().active!);
+    // fast report (plan:false) lands first with no suggestions
+    s.applyReport({ ...report(draft.design_id, 1.37), next_experiments: [] });
+    // background planner report for the same design carries suggestions but a different p90
+    const planned = report(draft.design_id, 9.99);
+    planned.next_experiments = [
+      { change: "add 1 replicate", p90_fold_error_drop_pct: 5, extra_tips: 12,
+        extra_compound_uL: 150, extra_plates: 0, score: 1, p90_after: 1.3 },
+    ];
+    s.mergeNextExperiments(planned);
+    const a = useUIStore.getState().active!;
+    expect(a.report.fold_error.p90).toBe(1.37);          // kept the fast answer
+    expect(a.report.next_experiments).toHaveLength(1);    // took only the suggestions
+  });
+
+  it("mergeNextExperiments drops a stale planner report for a superseded draft", () => {
+    const s = useUIStore.getState();
+    s.loadRun(run);
+    s.setPatch({ points: 8 });
+    const draft = activeDesign(useUIStore.getState().active!);
+    s.applyReport({ ...report(draft.design_id, 1.37), next_experiments: [] });
+    const stale = report("old-design", 1.0);
+    stale.next_experiments = [
+      { change: "stale", p90_fold_error_drop_pct: 1, extra_tips: 0,
+        extra_compound_uL: 0, extra_plates: 0, score: 0, p90_after: 1.0 },
+    ];
+    s.mergeNextExperiments(stale);
+    expect(useUIStore.getState().active!.report.next_experiments).toHaveLength(0);
+  });
 });

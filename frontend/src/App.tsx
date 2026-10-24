@@ -7,6 +7,7 @@ import { Banner } from "./components/Shell/Banner";
 import { DeckPlaceholder } from "./components/Bench/DeckPlaceholder";
 import { Deck } from "./components/Bench/Deck";
 import { RevealStage } from "./components/Shell/RevealStage";
+import { StageStrip } from "./components/Shell/StageStrip";
 import { TopicSection } from "./components/Topic/TopicSection";
 import { NeighborList } from "./components/Topic/NeighborList";
 import { DesignSection } from "./components/Design/DesignSection";
@@ -140,13 +141,13 @@ export function App() {
             <Banner kind="down" recorded={recorded} onOpenRecorded={openRecorded} />
           )}
 
-          {!run ? (
+          {!run && !isRunning ? (
             <StartScreen onRun={runQuestion} />
           ) : blocked ? (
             <BlockedPanel reasons={topic?.safety.reasons ?? []} onAsk={newQuestion} />
           ) : (
             <div className={styles.stages}>
-              {isRunning && <p className={styles.running}>Running all four stages. Usually a few seconds, longer on the first run of the day.</p>}
+              <StageStrip run={run} isRunning={isRunning} />
               <TryAnother topic={topic} onPick={pivot} />
               {topic && (
                 <RevealStage order={0}>
@@ -154,15 +155,15 @@ export function App() {
                   <NeighborList topic={topic} onExplore={pivot} />
                 </RevealStage>
               )}
-              {run.design && <RevealStage order={1}><DesignSection design={activeDesignVal ?? run.design} pair={run.pair} /></RevealStage>}
-              {run.design && <RevealStage order={1}><ReviewThread design={activeDesignVal ?? run.design} /></RevealStage>}
+              {activeDesignVal && <RevealStage order={1}><DesignSection design={activeDesignVal} pair={run?.pair} /></RevealStage>}
+              {activeDesignVal && <RevealStage order={1}><ReviewThread design={activeDesignVal} /></RevealStage>}
               {sim && <RevealStage order={2}><RobotSection sim={sim} /></RevealStage>}
               {report && <RevealStage order={3}><UncertaintySection report={report} /></RevealStage>}
             </div>
           )}
 
-          {error && !run && (
-            <p className={styles.error}>Couldn't run: {String((error as Error).message)}</p>
+          {!!error && !run && (
+            <p className={styles.error}>Couldn't run: {errorMessage(error)}</p>
           )}
         </main>
 
@@ -175,8 +176,7 @@ export function App() {
   );
 }
 
-function BlockedPanel({ reasons, onAsk }: { reasons: string[]; onAsk: () => void }) {
-  return (
+function BlockedPanel({ reasons, onAsk }: { reasons: string[]; onAsk: () => void }) {  return (
     <div className={styles.blocked}>
       <h2>Lab Planner doesn't design experiments for this topic.</h2>
       <ul>{reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
@@ -184,4 +184,9 @@ function BlockedPanel({ reasons, onAsk }: { reasons: string[]; onAsk: () => void
       <button className={styles.askDifferent} onClick={onAsk}>Ask a different question</button>
     </div>
   );
+}
+
+function errorMessage(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  return String(e);
 }

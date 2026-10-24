@@ -1,18 +1,21 @@
 import { useCallback, useRef, useState } from "react";
-import { runUncertainty } from "../api/queries";
+import { runSimulate, runUncertainty } from "../api/queries";
 import { applyWhatIf, type WhatIfPatch } from "../lib/whatif";
 import { hash6 } from "../lib/hash";
 import { activeDesign, useUIStore } from "../state/store";
 
-/** Controller for the what-if draft (W1.3). The draft, report and sim all live in the
- *  store under the active run, so the notebook and the bench read the same numbers and a
- *  new run starts clean. This hook only drives the debounced server call on release
- *  (plan=true), cancelling any in-flight request and dropping stale responses; cached
- *  designs resolve instantly with no request. */
+/** Controller for the what-if draft (W1.3, W1.4). The draft, report and sim all live in
+ *  the store under the active run, so the notebook and the bench read the same numbers and
+ *  a new run starts clean. On release this fires /api/uncertainty (plan=false) and
+ *  /api/simulate in parallel for a fast answer, then /api/uncertainty (plan=true) in the
+ *  background and merges only the planner's "best next changes". Cached designs resolve
+ *  instantly with no request; stale responses are dropped by design id. */
 export function useWhatIf() {
   const active = useUIStore((s) => s.active);
   const setStorePatch = useUIStore((s) => s.setPatch);
   const applyReport = useUIStore((s) => s.applyReport);
+  const applySim = useUIStore((s) => s.applySim);
+  const mergeNextExperiments = useUIStore((s) => s.mergeNextExperiments);
   const resetPatch = useUIStore((s) => s.resetPatch);
   const keepAsBaseline = useUIStore((s) => s.keepAsBaseline);
   const [pending, setPending] = useState(false);
@@ -38,19 +41,30 @@ export function useWhatIf() {
     abortRef.current?.abort();
     const ctrl = new AbortController();
     abortRef.current = ctrl;
+    const runs = st.baseReport.runs;
+    const seed = st.baseReport.seed;
     setPending(true);
     try {
-      const res = await runUncertainty(
-        { design, runs: st.baseReport.runs, seed: st.baseReport.seed, plan: true },
-        ctrl.signal,
-      );
-      applyReport(res);
+      // fast path: uncertainty without the planner + the protocol sim, in parallel
+      const [fast] = await Promise.all([
+        runUncertainty({ design, runs, seed, plan: false }, ctrl.signal),
+        runSimulate(design, ctrl.signal)
+          .then((s) => applySim(s))
+          .catch(() => {/* sim is best-effort; keep the last deck */}),
+      ]);
+      applyReport(fast);
     } catch {
       /* aborted or failed — keep the last good report */
     } finally {
       if (abortRef.current === ctrl) setPending(false);
     }
-  }, [applyReport]);
+
+    // background: the planner's extra Monte Carlo runs. Update only "best next changes".
+    if (ctrl.signal.aborted) return;
+    runUncertainty({ design, runs, seed, plan: true }, ctrl.signal)
+      .then((planned) => mergeNextExperiments(planned))
+      .catch(() => {/* superseded or failed — the fast report already shows */});
+  }, [applyReport, applySim, mergeNextExperiments]);
 
   const dirty = Object.keys(patch).length > 0 && !!base && draft?.design_id !== base.design_id;
 
