@@ -65,9 +65,13 @@ def _parse_location(value) -> StepLocation | None:
     return None
 
 
-# location embedded in a text line, e.g. "... from A1 of Foo on slot D1" or
-# "... into A1 of Bar on slot D2" or "... into Trash Bin on slot A3".
-_TEXT_LOC = re.compile(r"(?:from|into|to|at) (?P<rest>[A-P]?\d{0,2} ?of .+? on slot [A-D][1-4]|.+? on slot [A-D][1-4])$")
+# location embedded in a text line, e.g. "... from A1 of Foo on slot D1",
+# "... into A1 of Bar on slot D2", "... into Trash Bin on slot A3", possibly followed by
+# a trailing clause like " at 716.0 uL/sec" (so we do NOT anchor to end-of-string).
+_TEXT_LOC = re.compile(
+    r"(?:from|into|to|at)\s+"
+    r"(?P<rest>(?:[A-P]\d{1,2} of )?.+? on slot [A-D][1-4])"
+)
 
 
 def _location_from_text(text: str) -> StepLocation | None:
