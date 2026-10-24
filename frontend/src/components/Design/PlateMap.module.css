@@ -1,0 +1,27 @@
+.wrap { display: flex; flex-direction: column; gap: var(--space-2); }
+.label { font-size: 14px; color: var(--graphite); }
+
+.grid {
+  display: grid;
+  grid-template-columns: 16px repeat(12, 1fr);
+  gap: 2px;
+  max-width: 360px;
+}
+.corner { }
+.colHead, .rowHead {
+  font-size: 12px; font-stretch: 75%; font-weight: 500; color: var(--graphite);
+  display: flex; align-items: center; justify-content: center;
+}
+.well {
+  aspect-ratio: 1;
+  border: 1px solid var(--rule);
+  border-radius: 50%;
+}
+.empty { border-style: dashed; opacity: 0.4; }
+
+.legend { display: flex; align-items: center; gap: var(--space-2); font-size: 12px; color: var(--graphite); }
+.ramp {
+  display: inline-block; width: 60px; height: 8px; border-radius: 4px;
+  background: linear-gradient(to right, var(--inhibited), var(--active));
+}
+.ctrl { margin-left: var(--space-2); }
