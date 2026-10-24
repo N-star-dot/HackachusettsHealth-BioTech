@@ -8,10 +8,19 @@ scripts/build_demo_pairs.py.
 from __future__ import annotations
 
 import json
+import re
 from pathlib import Path
 
 _DEMO_PATH = Path(__file__).resolve().parents[2] / "data" / "demo" / "demo_pairs.json"
 _EVIDENCE_PATH = Path(__file__).resolve().parents[2] / "data" / "demo" / "evidence.json"
+
+# Keyword -> compound_chembl_id for matching a free-text question to a prepared pair.
+# Order within each list doesn't matter; longer/more-specific lists are still just OR.
+_PAIR_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "CHEMBL554": ("her2", "erbb2", "lapatinib"),
+    "CHEMBL10": ("p38", "mapk14", "sb-203580", "sb203580"),
+    "CHEMBL221959": ("jak", "jak2", "janus kinase", "tofacitinib"),
+}
 
 
 def load_demo_pairs() -> list[dict]:
@@ -43,3 +52,44 @@ def get_demo_pair(compound_chembl_id: str | None = None) -> dict | None:
             if p.get("compound_chembl_id") == compound_chembl_id:
                 return p
     return pairs[0]
+
+
+def pair_names(pair: dict) -> tuple[str, str]:
+    """Split a pair label 'lapatinib on HER2' -> ('lapatinib', 'HER2'). Falls back to ids."""
+    label = pair.get("label", "")
+    if " on " in label:
+        compound, target = label.split(" on ", 1)
+        return compound.strip(), target.strip()
+    return pair.get("compound_chembl_id", ""), pair.get("target_chembl_id", "")
+
+
+def _keyword_hit(query: str, keywords: tuple[str, ...]) -> bool:
+    """Case-insensitive word-boundary match of any keyword in the query."""
+    q = query.lower()
+    for kw in keywords:
+        # \b doesn't work around hyphens/digits cleanly, so bound on non-alphanumerics
+        if re.search(rf"(?<![a-z0-9]){re.escape(kw.lower())}(?![a-z0-9])", q):
+            return True
+    return False
+
+
+def match_pair(query: str, compound_chembl_id: str | None = None) -> tuple[dict, str]:
+    """Choose a demo pair for a question.
+
+    A supplied compound_chembl_id wins (match 'user'). Else the first keyword hit in the
+    query (match 'query'). Else the first pair (match 'default'). Returns (pair, match).
+    """
+    pairs = load_demo_pairs()
+    if not pairs:
+        raise RuntimeError("no demo pairs on disk — run scripts/build_demo_pairs.py")
+    by_id = {p["compound_chembl_id"]: p for p in pairs}
+
+    if compound_chembl_id and compound_chembl_id in by_id:
+        return by_id[compound_chembl_id], "user"
+
+    for p in pairs:  # preserve file order for deterministic 'first hit'
+        cid = p["compound_chembl_id"]
+        if cid in _PAIR_KEYWORDS and _keyword_hit(query, _PAIR_KEYWORDS[cid]):
+            return p, "query"
+
+    return pairs[0], "default"

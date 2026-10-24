@@ -84,6 +84,7 @@ class RunRequest(BaseModel):
     runs: int = Field(default=1000, ge=1, le=5000)
     seed: int = 42
     reader_cv: float = Field(default=0.05, ge=0.0, le=0.5)
+    compound_chembl_id: str | None = None
 
 
 class WhatIfRequest(BaseModel):
@@ -99,14 +100,45 @@ def health() -> HealthResponse:
     return HealthResponse(status="ok")
 
 
+@app.get("/api/pairs")
+def pairs() -> list[dict]:
+    """The prepared compound-target pairs the designer can use, with their priors.
+
+    Untyped list for now (the shape mirrors data/demo/demo_pairs.json); the frontend
+    reads label, ids, names, and prior {median_nM, spread_log10, n_papers, papers}.
+    """
+    from backend.stage2_design.demo_pairs import load_demo_pairs, pair_names
+
+    out = []
+    for p in load_demo_pairs():
+        prior = p.get("prior", {})
+        compound_name, target_name = pair_names(p)
+        out.append({
+            "label": p["label"],
+            "compound_chembl_id": p["compound_chembl_id"],
+            "target_chembl_id": p["target_chembl_id"],
+            "compound_name": compound_name,
+            "target_name": target_name,
+            "prior": {
+                "median_nM": prior.get("median_nM"),
+                "spread_log10": prior.get("spread_log10"),
+                "n_papers": prior.get("n_papers"),
+                "papers": prior.get("papers", []),
+            },
+        })
+    return out
+
+
 @app.post("/api/run", response_model=RunResponse)
 def run(req: RunRequest) -> RunResponse:
     result = run_pipeline(
-        req.query, weights=req.weights, runs=req.runs, seed=req.seed, reader_cv=req.reader_cv
+        req.query, weights=req.weights, runs=req.runs, seed=req.seed,
+        reader_cv=req.reader_cv, compound_chembl_id=req.compound_chembl_id,
     )
     return RunResponse(
         run_id=result.run_id,
         blocked=result.blocked,
+        pair=PairInfo(**result.pair) if result.pair else None,
         topic=result.topic,
         design=result.design,
         sim=result.sim,
@@ -127,10 +159,12 @@ def get_run(run_id: str) -> RunRecord:
         raw = db.get_report(run_id, stage)
         return model.model_validate(raw) if raw is not None else None
 
+    raw_pair = db.get_report(run_id, "pair")
     return RunRecord(
         run_id=run_id,
         blocked=False,
         status=meta.get("status", "done"),
+        pair=PairInfo(**raw_pair) if raw_pair else None,
         topic=_load("topic", TopicReport),
         design=_load("design", ExperimentDesign),
         sim=_load("sim", SimResult),
