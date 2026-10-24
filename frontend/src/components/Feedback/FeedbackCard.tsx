@@ -73,23 +73,39 @@ export function FeedbackCard({ design, report, onApply }: Props) {
             ? ` ${freeWells} are free, so more replicates or points add no plate.`
             : " The plate is full, so bigger designs need a second plate."}
         </p>
-        {best && (
-          <p className={styles.best}>
-            Best value: {best.change.toLowerCase()}. p90{" "}
-            <Num value={fold(report.fold_error.p90)} provenance={prov()} /> to{" "}
-            <Num value={fold(best.p90_after!)} provenance={prov()} /> for{" "}
-            <Num value={`${best.extra_tips} more tips`} provenance={assumed("Extra tips from the cost model.")} />{" "}
-            and <Num value={`${best.extra_compound_uL} µL`} provenance={assumed("Extra compound from the cost model.")} /> more compound.
-            {best.design && onApply && (
-              <button className={styles.apply} onClick={() => onApply({
-                top_nM: best.design!.dilution.top_nM,
-                factor: best.design!.dilution.factor,
-                points: best.design!.dilution.points,
-                replicates: best.design!.replicates,
-              })}>Apply this change</button>
-            )}
-          </p>
-        )}
+        {(() => {
+          // A change is only "value" if it meaningfully cuts p90. Excess error is
+          // (p90 - 1); require it to drop by at least 8% to be worth recommending.
+          const excess = Math.max(report.fold_error.p90 - 1, 1e-6);
+          const drop = best?.p90_after != null ? (report.fold_error.p90 - best.p90_after) / excess : 0;
+          const worthwhile = best && best.p90_after != null && drop >= 0.08;
+          if (worthwhile) {
+            return (
+              <p className={styles.best}>
+                Best value: {best!.change.toLowerCase()}. p90{" "}
+                <Num value={fold(report.fold_error.p90)} provenance={prov()} /> to{" "}
+                <Num value={fold(best!.p90_after!)} provenance={prov()} /> for{" "}
+                <Num value={`${best!.extra_tips} more tips`} provenance={assumed("Extra tips from the cost model.")} />{" "}
+                and <Num value={`${best!.extra_compound_uL} µL`} provenance={assumed("Extra compound from the cost model.")} /> more compound.
+                {best!.design && onApply && (
+                  <button className={styles.apply} onClick={() => onApply({
+                    top_nM: best!.design!.dilution.top_nM,
+                    factor: best!.design!.dilution.factor,
+                    points: best!.design!.dilution.points,
+                    replicates: best!.design!.replicates,
+                  })}>Apply this change</button>
+                )}
+              </p>
+            );
+          }
+          return (
+            <p className={styles.best}>
+              This design is already efficient: no change the planner tried cuts p90 enough
+              to be worth the extra tips and compound. Spend your plate on a new topic or a
+              different compound instead.
+            </p>
+          );
+        })()}
       </div>
     </section>
   );
@@ -106,20 +122,35 @@ export function buildFindings(design: ExperimentDesign, report: UncertaintyRepor
   const cov = coverage(top_nM, factor, points, prior);
   const needed = targetHalfWidth(design.prior_ic50.spread_log10 || 0.4);
 
+  // How many points can we actually add before hitting the 11-point cap? A serial
+  // dilution extends the LOW end (adds weaker concentrations below the current bottom).
+  const MAX_POINTS = 11;
+  const canAdd = Math.max(0, MAX_POINTS - points);
+  const addN = Math.min(2, canAdd);
+  const atTop = top_nM * factor; // where "raise top" lands
+  const addPointsAction = canAdd > 0
+    ? {
+        label: addN === 1 ? "Add 1 point at the low end" : `Add ${addN} points at the low end`,
+        patch: { points: points + addN },
+      }
+    : undefined;
+
   // 1. Does the tested range bracket the prior IC50?
   if (report.outside_range_share > 0.1) {
     out.push({
       key: "range", verdict: "poor",
       title: "Your concentration range misses the IC50 too often",
-      detail: `In ${(report.outside_range_share * 100).toFixed(0)}% of runs the true IC50 fell outside ${nM(lo)} to ${nM(hi)}. Widen the range: raise the top concentration or add points.`,
-      action: { label: `Raise top to ${nM(top_nM * factor)}`, patch: { top_nM: top_nM * factor } },
+      detail: `In ${(report.outside_range_share * 100).toFixed(0)}% of runs the true IC50 fell outside ${nM(lo)} to ${nM(hi)}. Raise the top concentration to catch potent compounds.`,
+      action: { label: `Raise top to ${nM(atTop)}`, patch: { top_nM: atTop } },
     });
   } else if (report.outside_range_share > 0.02) {
     out.push({
       key: "range", verdict: "watch",
       title: "The range covers the IC50, but with little margin",
-      detail: `${(report.outside_range_share * 100).toFixed(0)}% of runs land outside ${nM(lo)} to ${nM(hi)}. One more dilution point on each end buys margin cheaply.`,
-      action: { label: "Add 2 points", patch: { points: Math.min(11, points + 2) } },
+      detail: canAdd > 0
+        ? `${(report.outside_range_share * 100).toFixed(0)}% of runs land outside ${nM(lo)} to ${nM(hi)}. Adding ${addN === 1 ? "a point" : `${addN} points`} extends the low end (below ${nM(lo)}) for a little more margin.`
+        : `${(report.outside_range_share * 100).toFixed(0)}% of runs land outside ${nM(lo)} to ${nM(hi)}. You are already at the 11-point limit, so raise the top concentration instead.`,
+      action: addPointsAction ?? { label: `Raise top to ${nM(atTop)}`, patch: { top_nM: atTop } },
     });
   } else {
     out.push({
@@ -158,8 +189,10 @@ export function buildFindings(design: ExperimentDesign, report: UncertaintyRepor
     out.push({
       key: "fit", verdict: report.failed_fit_share > 0.05 ? "poor" : "watch",
       title: "Some curve fits failed",
-      detail: `${(report.failed_fit_share * 100).toFixed(0)}% of fits failed. Too few points on the curve's slope is the usual cause; add concentrations around the prior.`,
-      action: { label: "Add 2 points", patch: { points: Math.min(11, points + 2) } },
+      detail: canAdd > 0
+        ? `${(report.failed_fit_share * 100).toFixed(0)}% of fits failed. Too few points on the curve's slope is the usual cause; adding ${addN === 1 ? "a point" : `${addN} points`} gives the fit more to work with.`
+        : `${(report.failed_fit_share * 100).toFixed(0)}% of fits failed. You are at the 11-point limit; a tighter dilution factor packs more points through the IC50 instead.`,
+      action: addPointsAction ?? { label: "Tighten factor to 3", patch: { factor: 3 } },
     });
   }
 

@@ -53,4 +53,21 @@ describe("feedback findings (discovery)", () => {
     expect(spacing.verdict).toBe("watch");
     expect(spacing.action!.patch.factor).toBe(3);
   });
+
+  it("at the 11-point limit, the range action raises the top instead of adding points", () => {
+    const maxed = { ...design, dilution: { ...design.dilution, points: 11 } };
+    const f = buildFindings(maxed, report({ outside_range_share: 0.05 }));
+    const range = f.find((x) => x.key === "range")!;
+    // can't add points (already 11), so the action must raise top_nM, not set points
+    expect(range.action!.patch.points).toBeUndefined();
+    expect(range.action!.patch.top_nM).toBeGreaterThan(maxed.dilution.top_nM);
+  });
+
+  it("adds only 1 point when 1 slot remains, and labels it honestly", () => {
+    const near = { ...design, dilution: { ...design.dilution, points: 10 } };
+    const f = buildFindings(near, report({ outside_range_share: 0.05 }));
+    const range = f.find((x) => x.key === "range")!;
+    expect(range.action!.patch.points).toBe(11); // 10 + 1, capped
+    expect(range.action!.label.toLowerCase()).toContain("1 point");
+  });
 });
