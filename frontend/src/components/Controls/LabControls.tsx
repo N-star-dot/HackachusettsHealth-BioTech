@@ -6,23 +6,24 @@ import { simulated } from "../Num/provenance";
 import { CompareChart } from "./CompareChart";
 import { fold, nM, uL } from "../../lib/format";
 import { plannedLayout } from "../../lib/plate";
-import type { ExperimentDesign, NextExperiment, UncertaintyReport } from "../../api/types";
+import type { NextExperiment } from "../../api/types";
 import styles from "./LabControls.module.css";
 
-interface Props {
-  design: ExperimentDesign;
-  report: UncertaintyReport;
-}
-
 /** Lab controls / what-if (BRIEF 5.12). Geometry updates live; the server p90 updates on
- *  release, with the old value ghosted. */
-export function LabControls({ design, report }: Props) {
-  const wi = useWhatIf(design, report);
+ *  release. Reads everything from the active run in the store (W1.3), so the readout here
+ *  always matches the notebook's uncertainty section. */
+export function LabControls() {
+  const wi = useWhatIf();
   const addPin = useUIStore((s) => s.addPin);
   const pins = useUIStore((s) => s.pins);
+
+  // Nothing to control until a run with a design and report is active.
+  if (!wi.base || !wi.report || !wi.draft) return null;
+  const report = wi.report;
+  const base = wi.base;
   const d = wi.draft;
   const used = plannedLayout(d).wellsUsed;
-  const prov = () => simulated(wi.report.seed, wi.report.runs);
+  const prov = () => simulated(report.seed, report.runs);
 
   const set = (key: keyof typeof wi.patch) => (v: number) =>
     wi.setPatch({ ...wi.patch, [key]: v });
@@ -45,6 +46,14 @@ export function LabControls({ design, report }: Props) {
   return (
     <div className={styles.wrap}>
       <h3 className={styles.title}>Lab controls</h3>
+
+      {wi.dirty && (
+        <div className={styles.draftBar}>
+          <span className={styles.draftLabel}>Draft change</span>
+          <button className={styles.draftReset} onClick={wi.resetPatch}>Reset to designed values</button>
+          <button className={styles.draftKeep} onClick={wi.keepAsBaseline}>Keep as baseline</button>
+        </div>
+      )}
 
       <Row label="Top concentration" value={nM(d.dilution.top_nM)}>
         <Ctl min={0} max={5} step={0.05}
@@ -74,18 +83,15 @@ export function LabControls({ design, report }: Props) {
       )}
 
       <div className={`${styles.readout} ${wi.pending ? styles.dim : ""}`}>
-        <span>p90 <Num value={fold(wi.report.fold_error.p90)} provenance={prov()} /></span>
-        <span>median <Num value={fold(wi.report.fold_error.median)} provenance={prov()} /></span>
+        <span>p90 <Num value={fold(report.fold_error.p90)} provenance={prov()} /></span>
+        <span>median <Num value={fold(report.fold_error.median)} provenance={prov()} /></span>
         <span>wells {used}</span>
         {wi.pending && <span className={styles.pending}>updating…</span>}
       </div>
-      <button className={styles.reset} onClick={() => { wi.setPatch({}); }}>
-        Reset to designed values
-      </button>
 
-      {wi.report.next_experiments.length > 0 && (
+      {report.next_experiments.length > 0 && (
         <div className={styles.suggestions}>
-          {wi.report.next_experiments.map((ne, i) => (
+          {report.next_experiments.map((ne, i) => (
             <button key={i} className={styles.try} disabled={!ne.design} onClick={() => tryChange(ne)}>
               Try: {ne.change}
             </button>
@@ -95,15 +101,15 @@ export function LabControls({ design, report }: Props) {
 
       <div className={styles.pinRow}>
         <button className={styles.pin}
-          onClick={() => addPin(design.assay.compound_chembl_id, estTips, wi.report.fold_error.p90)}
+          onClick={() => addPin(base.assay.compound_chembl_id, estTips, report.fold_error.p90)}
           disabled={pins.length >= 4}>
           Pin for comparison
         </button>
         {pins.map((p) => <span key={p.letter} className={styles.chip}>{p.letter}</span>)}
       </div>
 
-      <CompareChart currentTips={estTips} currentP90={wi.report.fold_error.p90}
-                    suggestions={wi.report.next_experiments} />
+      <CompareChart currentTips={estTips} currentP90={report.fold_error.p90}
+                    suggestions={report.next_experiments} />
     </div>
   );
 }

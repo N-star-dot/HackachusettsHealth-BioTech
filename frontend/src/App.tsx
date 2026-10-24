@@ -19,6 +19,7 @@ import { useHealth } from "./api/queries";
 import { loadRecordedIndex, type RecordedIndexEntry } from "./api/recorded";
 import { gateOk } from "./api/normalize";
 import { pushHistory } from "./lib/history";
+import { applyWhatIf } from "./lib/whatif";
 import { useUIStore } from "./state/store";
 import styles from "./App.module.css";
 
@@ -27,6 +28,8 @@ export function App() {
   const health = useHealth();
   const question = useUIStore((s) => s.question);
   const setQuestion = useUIStore((s) => s.setQuestion);
+  const loadRun = useUIStore((s) => s.loadRun);
+  const active = useUIStore((s) => s.active);
   const [recorded, setRecorded] = useState<RecordedIndexEntry[]>([]);
   const [shared, setShared] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
@@ -46,6 +49,17 @@ export function App() {
   const serverDown = health.isError;
   const topic = run?.topic ?? null;
   const blocked = run?.blocked || (topic != null && !gateOk(topic.safety));
+
+  // W1.3: one active design/report/sim for the whole screen. Seeded from the run; replaced
+  // by what-if results. The notebook and the bench both read from it.
+  useEffect(() => {
+    if (run && !blocked) loadRun(run);
+  }, [run, blocked, loadRun]);
+
+  const design = active?.baseDesign ?? run?.design ?? null;
+  const activeDesignVal = active ? applyWhatIf(active.baseDesign, active.patch).design : design;
+  const report = active?.report ?? run?.uncertainty ?? null;
+  const sim = active?.sim ?? run?.sim ?? null;
 
   useEffect(() => {
     if (run && topic && !blocked && run.uncertainty) {
@@ -140,10 +154,10 @@ export function App() {
                   <NeighborList topic={topic} onExplore={pivot} />
                 </RevealStage>
               )}
-              {run.design && <RevealStage order={1}><DesignSection design={run.design} pair={run.pair} /></RevealStage>}
-              {run.design && <RevealStage order={1}><ReviewThread design={run.design} /></RevealStage>}
-              {run.sim && <RevealStage order={2}><RobotSection sim={run.sim} /></RevealStage>}
-              {run.uncertainty && <RevealStage order={3}><UncertaintySection report={run.uncertainty} /></RevealStage>}
+              {run.design && <RevealStage order={1}><DesignSection design={activeDesignVal ?? run.design} pair={run.pair} /></RevealStage>}
+              {run.design && <RevealStage order={1}><ReviewThread design={activeDesignVal ?? run.design} /></RevealStage>}
+              {sim && <RevealStage order={2}><RobotSection sim={sim} /></RevealStage>}
+              {report && <RevealStage order={3}><UncertaintySection report={report} /></RevealStage>}
             </div>
           )}
 
@@ -153,10 +167,8 @@ export function App() {
         </main>
 
         <aside className={styles.bench}>
-          {run && !blocked && run.sim ? <Deck sim={run.sim} design={run.design} /> : <DeckPlaceholder />}
-          {run && !blocked && run.design && run.uncertainty && (
-            <LabControls design={run.design} report={run.uncertainty} />
-          )}
+          {sim && !blocked ? <Deck sim={sim} design={activeDesignVal ?? design} /> : <DeckPlaceholder />}
+          {!blocked && active && <LabControls />}
         </aside>
       </div>
     </div>
