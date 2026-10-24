@@ -1,7 +1,7 @@
 # Dashboard (stage 5) — owner C
 
-The researcher-facing UI: React 18 + Vite + TypeScript. Visual design lives in a custom design system
-tokens for "Hackachusetts Research Dashboard"; colors and type are mirrored as tokens at
+The researcher-facing UI: React 18 + Vite + TypeScript. The visual design is defined by a
+custom design system for the "Hackachusetts Research Dashboard"; colors and type are mirrored as tokens at
 the top of `src/styles.css`.
 
 ## Run it
