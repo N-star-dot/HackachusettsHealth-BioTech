@@ -18,6 +18,8 @@ class NoiseModel(BaseModel):
     pipette_bias: float = Field(..., ge=0, description="Systematic pipetting bias.")
     reader_cv: float = Field(..., ge=0, description="Plate-reader scatter, user-set, default 0.05.")
     sources: list[Source] = Field(default_factory=list)
+    # B0.8: exact Source per noise number, so the dashboard popover credits the right one.
+    field_sources: dict[str, Source] = Field(default_factory=dict)
 
 
 class FoldError(BaseModel):

@@ -29,11 +29,14 @@ from backend.contracts import (
     NoiseModel,
     UncertaintyReport,
 )
+from backend.contracts.common import Source, SourceType
 from backend.stage4_uncertainty.calibration import calibrate
 from backend.stage4_uncertainty.noise_sources import (
     LAB_SPREAD_LOG10,
+    kalliokoski_source,
     lookup_pipette_error,
     noise_sources,
+    pipette_spec_source,
 )
 
 
@@ -106,12 +109,26 @@ def run_uncertainty(
 
     p_cv, p_bias = lookup_pipette_error(design.pipette, design.volumes_uL.transfer)
     spread = design.prior_ic50.spread_log10 or LAB_SPREAD_LOG10
+
+    # B0.8: one source per noise number. lab_spread credits the pair's ChEMBL prior when
+    # that spread is used, else the Kalliokoski paper; pipette rows cite the Opentrons spec
+    # point actually used; reader_cv is an assumed user setting.
+    used_prior_spread = bool(design.prior_ic50.spread_log10)
+    spec_src = pipette_spec_source(design.pipette, design.volumes_uL.transfer)
+    field_sources = {
+        "lab_spread_log10": design.prior_ic50.source if used_prior_spread else kalliokoski_source(),
+        "pipette_cv": spec_src,
+        "pipette_bias": spec_src,
+        "reader_cv": Source(type=SourceType.ASSUMED, id="user setting, default 0.05"),
+    }
+
     noise = NoiseModel(
         lab_spread_log10=spread,
         pipette_cv=p_cv,
         pipette_bias=p_bias,
         reader_cv=reader_cv,
         sources=noise_sources(),
+        field_sources=field_sources,
     )
 
     fold_errors: list[float] = []
