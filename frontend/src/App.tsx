@@ -4,6 +4,7 @@ import { StartScreen } from "./components/Shell/StartScreen";
 import { Banner } from "./components/Shell/Banner";
 import { DeckPlaceholder } from "./components/Bench/DeckPlaceholder";
 import { Deck } from "./components/Bench/Deck";
+import { RevealStage } from "./components/Shell/RevealStage";
 import { TopicSection } from "./components/Topic/TopicSection";
 import { DesignSection } from "./components/Design/DesignSection";
 import { ReviewThread } from "./components/Review/ReviewThread";
@@ -49,11 +50,11 @@ export function App() {
           ) : (
             <div className={styles.stages}>
               {isRunning && <p className={styles.running}>Running all four stages. Usually a few seconds, longer on the first run of the day.</p>}
-              {topic && <TopicSection topic={topic} />}
-              {run.design && <DesignSection design={run.design} pair={run.pair} />}
-              {run.design && <ReviewThread design={run.design} />}
-              {run.sim && <RobotSection sim={run.sim} />}
-              {run.uncertainty && <UncertaintySection report={run.uncertainty} />}
+              {topic && <RevealStage order={0}><TopicSection topic={topic} /></RevealStage>}
+              {run.design && <RevealStage order={1}><DesignSection design={run.design} pair={run.pair} /></RevealStage>}
+              {run.design && <RevealStage order={1}><ReviewThread design={run.design} /></RevealStage>}
+              {run.sim && <RevealStage order={2}><RobotSection sim={run.sim} /></RevealStage>}
+              {run.uncertainty && <RevealStage order={3}><UncertaintySection report={run.uncertainty} /></RevealStage>}
             </div>
           )}
 
