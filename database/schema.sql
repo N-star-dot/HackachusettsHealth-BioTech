@@ -32,7 +32,8 @@ CREATE TABLE IF NOT EXISTS runs (
     run_id      TEXT PRIMARY KEY,            -- uuid
     query       TEXT NOT NULL,
     created_at  TEXT NOT NULL DEFAULT (datetime('now')),
-    status      TEXT NOT NULL DEFAULT 'started'  -- started | topic | design | sim | uncertainty | done | error
+    status      TEXT NOT NULL DEFAULT 'started',  -- started | topic | design | sim | uncertainty | done | error
+    error       TEXT                         -- error message when status='error' (B2.1)
 );
 
 -- ---------------------------------------------------------------------------

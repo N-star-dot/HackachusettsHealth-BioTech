@@ -35,6 +35,9 @@ class Database:
         self._conn = sqlite3.connect(str(self.path), check_same_thread=False)
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA busy_timeout = 5000;")
+        # B2.1: the connection is shared across the async worker thread and the request
+        # thread, so serialise writes with a lock.
+        self._write_lock = __import__("threading").Lock()
         self._ensure_schema()
 
     def _ensure_schema(self) -> None:
@@ -52,6 +55,9 @@ class Database:
             self._conn.execute(
                 "ALTER TABLE calibration_groups ADD COLUMN document_ids TEXT NOT NULL DEFAULT '[]'"
             )
+        run_cols = {r["name"] for r in self._conn.execute("PRAGMA table_info(runs)")}
+        if "error" not in run_cols:
+            self._conn.execute("ALTER TABLE runs ADD COLUMN error TEXT")
 
     # --- api cache ---------------------------------------------------------
     def cache_get(self, source: str, request_key: str) -> dict[str, Any] | None:
@@ -78,27 +84,37 @@ class Database:
     # --- runs & reports ----------------------------------------------------
     def create_run(self, query: str, run_id: str | None = None) -> str:
         run_id = run_id or uuid.uuid4().hex
-        self._conn.execute(
-            "INSERT OR REPLACE INTO runs(run_id, query, status) VALUES(?,?,?)",
-            (run_id, query, "started"),
-        )
-        self._conn.commit()
+        with self._write_lock:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO runs(run_id, query, status) VALUES(?,?,?)",
+                (run_id, query, "started"),
+            )
+            self._conn.commit()
         return run_id
 
     def set_run_status(self, run_id: str, status: str) -> None:
-        self._conn.execute("UPDATE runs SET status=? WHERE run_id=?", (status, run_id))
-        self._conn.commit()
+        with self._write_lock:
+            self._conn.execute("UPDATE runs SET status=? WHERE run_id=?", (status, run_id))
+            self._conn.commit()
+
+    def set_run_error(self, run_id: str, message: str) -> None:
+        with self._write_lock:
+            self._conn.execute(
+                "UPDATE runs SET status='error', error=? WHERE run_id=?", (message, run_id)
+            )
+            self._conn.commit()
 
     def save_report(self, run_id: str, stage: str, payload: Any) -> None:
         """Persist a stage's contract. `payload` may be a Pydantic model or a dict."""
         body = payload.model_dump_json() if hasattr(payload, "model_dump_json") else json.dumps(payload)
-        self._conn.execute(
-            """INSERT INTO reports(run_id, stage, payload) VALUES(?,?,?)
-               ON CONFLICT(run_id, stage) DO UPDATE SET
-                 payload=excluded.payload, created_at=datetime('now')""",
-            (run_id, stage, body),
-        )
-        self._conn.commit()
+        with self._write_lock:
+            self._conn.execute(
+                """INSERT INTO reports(run_id, stage, payload) VALUES(?,?,?)
+                   ON CONFLICT(run_id, stage) DO UPDATE SET
+                     payload=excluded.payload, created_at=datetime('now')""",
+                (run_id, stage, body),
+            )
+            self._conn.commit()
 
     def get_report(self, run_id: str, stage: str) -> dict[str, Any] | None:
         row = self._conn.execute(

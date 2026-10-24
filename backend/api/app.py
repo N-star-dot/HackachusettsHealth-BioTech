@@ -15,6 +15,7 @@ a fresh POST (alias fields like safety.pass / simulator.pass, not the stored fie
 from __future__ import annotations
 
 import re
+import threading
 from typing import Literal
 
 from fastapi import FastAPI, HTTPException
@@ -74,6 +75,7 @@ class RunMeta(BaseModel):
     query: str
     created_at: str
     status: str
+    error: str | None = None
 
 
 class RunRecord(RunResponse):
@@ -88,6 +90,7 @@ class RunRequest(BaseModel):
     seed: int = 42
     reader_cv: float = Field(default=0.05, ge=0.0, le=0.5)
     compound_chembl_id: str | None = None
+    mode: Literal["sync", "async"] = "sync"  # B2.1
 
 
 class WhatIfRequest(BaseModel):
@@ -135,6 +138,24 @@ def pairs() -> list[dict]:
 
 @app.post("/api/run", response_model=RunResponse)
 def run(req: RunRequest) -> RunResponse:
+    if req.mode == "async":
+        # B2.1: create the run row, run the pipeline in a background thread, return at once.
+        db = get_db()
+        run_id = db.create_run(req.query)
+
+        def _worker() -> None:
+            try:
+                run_pipeline(
+                    req.query, weights=req.weights, runs=req.runs, seed=req.seed,
+                    reader_cv=req.reader_cv, compound_chembl_id=req.compound_chembl_id,
+                    run_id=run_id,
+                )
+            except Exception as exc:  # record the failure; GET exposes status='error'
+                get_db().set_run_error(run_id, f"{type(exc).__name__}: {exc}")
+
+        threading.Thread(target=_worker, daemon=True).start()
+        return RunResponse(run_id=run_id, blocked=False, status="started")
+
     result = run_pipeline(
         req.query, weights=req.weights, runs=req.runs, seed=req.seed,
         reader_cv=req.reader_cv, compound_chembl_id=req.compound_chembl_id,
@@ -178,6 +199,7 @@ def get_run(run_id: str) -> RunRecord:
             query=meta["query"],
             created_at=meta["created_at"],
             status=meta["status"],
+            error=meta.get("error"),
         ),
     )
 

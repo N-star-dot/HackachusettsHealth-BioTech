@@ -47,9 +47,10 @@ def run_pipeline(
     reader_cv: float = 0.05,
     persist: bool = True,
     compound_chembl_id: str | None = None,
+    run_id: str | None = None,
 ) -> PipelineResult:
     db = get_db() if persist else None
-    run_id = db.create_run(query) if db else "ephemeral"
+    run_id = run_id or (db.create_run(query) if db else "ephemeral")
 
     # --- stage 1: topic (safety gate inside) ---
     topic = score_topic(query, weights=weights)
