@@ -1,0 +1,9 @@
+.lab { display: flex; flex-direction: column; gap: var(--space-3); }
+.head { display: flex; align-items: baseline; gap: var(--space-3); }
+.title { font-size: 20px; font-weight: 600; font-stretch: 112%; }
+.count { font-size: 13px; color: var(--graphite); font-variant-numeric: tabular-nums; }
+.scatter, .hist { width: 100%; height: auto; display: block; }
+.tick { font-size: 9px; fill: var(--graphite); font-variant-numeric: tabular-nums; }
+.axisLabel { font-size: 11px; fill: var(--graphite); font-stretch: 75%; }
+.markerLabel { font-size: 9px; font-variant-numeric: tabular-nums; }
+.label { font-size: 13px; color: var(--graphite); }

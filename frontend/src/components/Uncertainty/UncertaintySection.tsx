@@ -1,8 +1,9 @@
 import { Num } from "../Num/Num";
 import { simulated, src, assumed } from "../Num/provenance";
-import { FoldErrorDots } from "./FoldErrorDots";
+import { VirtualLab } from "./VirtualLab";
 import { CurveBand } from "./CurveBand";
 import { fold, pct } from "../../lib/format";
+import { useUIStore } from "../../state/store";
 import type { Source, UncertaintyReport } from "../../api/types";
 import styles from "./UncertaintySection.module.css";
 
@@ -14,6 +15,9 @@ interface Props {
  *  calibration carry real sources; the readouts are synthetic. Every number has provenance. */
 export function UncertaintySection({ report }: Props) {
   const { fold_error, noise, calibration, runs, seed } = report;
+  // Ghost the run's baseline Monte Carlo behind the draft's when a what-if is active.
+  const baseReport = useUIStore((s) => s.active?.baseReport ?? null);
+  const baseline = baseReport && baseReport.design_id !== report.design_id ? baseReport : null;
   const sim = () => simulated(seed, runs);
   const fieldSrc = (k: keyof NonNullable<typeof noise.field_sources>): Source | undefined =>
     noise.field_sources?.[k];
@@ -47,7 +51,7 @@ export function UncertaintySection({ report }: Props) {
           <Num value={pct(report.failed_fit_share)} provenance={sim()} /> of curve fits failed.
         </p>
 
-        <FoldErrorDots report={report} />
+        <VirtualLab report={report} baseline={baseline} />
         <CurveBand report={report} />
 
         <table className={styles.noise}>
