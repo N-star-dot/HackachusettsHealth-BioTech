@@ -1,10 +1,12 @@
 import * as Slider from "@radix-ui/react-slider";
 import { useWhatIf } from "../../hooks/useWhatIf";
+import { useUIStore } from "../../state/store";
 import { Num } from "../Num/Num";
 import { simulated } from "../Num/provenance";
+import { CompareChart } from "./CompareChart";
 import { fold, nM, uL } from "../../lib/format";
 import { plannedLayout } from "../../lib/plate";
-import type { ExperimentDesign, UncertaintyReport } from "../../api/types";
+import type { ExperimentDesign, NextExperiment, UncertaintyReport } from "../../api/types";
 import styles from "./LabControls.module.css";
 
 interface Props {
@@ -16,12 +18,29 @@ interface Props {
  *  release, with the old value ghosted. */
 export function LabControls({ design, report }: Props) {
   const wi = useWhatIf(design, report);
+  const addPin = useUIStore((s) => s.addPin);
+  const pins = useUIStore((s) => s.pins);
   const d = wi.draft;
   const used = plannedLayout(d).wellsUsed;
   const prov = () => simulated(wi.report.seed, wi.report.runs);
 
   const set = (key: keyof typeof wi.patch) => (v: number) =>
     wi.setPatch({ ...wi.patch, [key]: v });
+
+  // "Try this change": apply a suggestion's design deltas as a what-if patch
+  const tryChange = (ne: NextExperiment) => {
+    if (!ne.design) return;
+    wi.setPatch({
+      top_nM: ne.design.dilution.top_nM,
+      factor: ne.design.dilution.factor,
+      points: ne.design.dilution.points,
+      replicates: ne.design.replicates,
+      transfer: ne.design.volumes_uL.transfer,
+    });
+    wi.commit();
+  };
+
+  const estTips = plannedLayout(d).wellsUsed; // proxy cost for the chart x-axis
 
   return (
     <div className={styles.wrap}>
@@ -63,6 +82,28 @@ export function LabControls({ design, report }: Props) {
       <button className={styles.reset} onClick={() => { wi.setPatch({}); }}>
         Reset to designed values
       </button>
+
+      {wi.report.next_experiments.length > 0 && (
+        <div className={styles.suggestions}>
+          {wi.report.next_experiments.map((ne, i) => (
+            <button key={i} className={styles.try} disabled={!ne.design} onClick={() => tryChange(ne)}>
+              Try: {ne.change}
+            </button>
+          ))}
+        </div>
+      )}
+
+      <div className={styles.pinRow}>
+        <button className={styles.pin}
+          onClick={() => addPin(design.assay.compound_chembl_id, estTips, wi.report.fold_error.p90)}
+          disabled={pins.length >= 4}>
+          Pin for comparison
+        </button>
+        {pins.map((p) => <span key={p.letter} className={styles.chip}>{p.letter}</span>)}
+      </div>
+
+      <CompareChart currentTips={estTips} currentP90={wi.report.fold_error.p90}
+                    suggestions={wi.report.next_experiments} />
     </div>
   );
 }
