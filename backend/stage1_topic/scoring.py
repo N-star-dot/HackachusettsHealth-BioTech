@@ -14,6 +14,7 @@ from __future__ import annotations
 
 from backend.contracts import (
     Momentum,
+    Neighbor,
     SafetyGate,
     Source,
     TopicRef,
@@ -77,6 +78,30 @@ def _counts_from_source(query: str) -> tuple[TopicRef, list[YearCount], str | No
         return _placeholder_counts(query)
 
 
+def _counts_by_id(openalex_id: str, query: str) -> tuple[TopicRef, list[YearCount], str | None]:
+    """Resolve a topic directly by OpenAlex id (B2.2), skipping the keyword search."""
+    try:
+        from pipeline.ingest import openalex
+        from pipeline.ingest.http_cache import cached_get_json
+
+        short = openalex_id.rsplit("/", 1)[-1]
+        body = cached_get_json("openalex", f"https://api.openalex.org/topics/{short}")
+        name = body.get("display_name") or query
+        field = (body.get("field") or {}).get("display_name")
+        topic = TopicRef(openalex_id=short, name=name)
+        rows = openalex.works_by_year(short)
+        counts = [
+            YearCount(year=r["year"], works=r["works"],
+                      source=Source(type=SourceType.OPENALEX, id=short, url=_counts_url(short)))
+            for r in rows
+        ]
+        if len(counts) < 3:
+            return _placeholder_counts(query)
+        return topic, counts, field
+    except Exception:
+        return _placeholder_counts(query)
+
+
 def _momentum(counts: list[YearCount], field: str | None) -> Momentum:
     """Momentum from the trained model, else a slope heuristic fallback."""
     counts_rows = [{"year": c.year, "works": c.works} for c in counts]
@@ -98,10 +123,14 @@ def _momentum(counts: list[YearCount], field: str | None) -> Momentum:
     return Momentum(p_growth=0.6 if growing else 0.4, model="slope-heuristic")
 
 
-def score_topic(query: str, weights: dict[str, float] | None = None) -> TopicReport:
+def score_topic(query: str, weights: dict[str, float] | None = None,
+                openalex_topic_id: str | None = None) -> TopicReport:
     safety: SafetyGate = check_topic_safety(query)
 
-    topic, counts, field = _counts_from_source(query)
+    if openalex_topic_id:
+        topic, counts, field = _counts_by_id(openalex_topic_id, query)
+    else:
+        topic, counts, field = _counts_from_source(query)
     offline = topic.openalex_id == "T00000"
 
     if offline:
@@ -147,8 +176,8 @@ def score_topic(query: str, weights: dict[str, float] | None = None) -> TopicRep
         axis_sources=axis_sources, axis_notes=axis_notes,
     )
 
-    # Real neighbors arrive in B2.2; until then, send none rather than a placeholder.
-    neighbors: list = []
+    # Real neighbors (B2.2): sibling topics in the same subfield, less crowded, scored.
+    neighbors: list = [] if offline else _real_neighbors(query, topic, counts)
 
     return TopicReport(
         query=query,
@@ -256,3 +285,62 @@ def recompute_axes(report: TopicReport, design, sim) -> TopicReport:
         axis_sources=axis_sources, axis_notes=axis_notes,
     )
     return report.model_copy(update={"matrix": new_matrix})
+
+
+# --- B2.2: real neighbors (shift to a less explored topic) -------------------
+
+def _works_2020_2024_and_feats(openalex_id: str) -> tuple[int, dict | None] | None:
+    """(2020-2024 works total, features) for a topic from cached counts, or None."""
+    try:
+        from pipeline.ingest import openalex
+
+        rows = openalex.works_by_year(openalex_id)
+    except Exception:
+        return None
+    if not rows:
+        return None
+    total = sum(r["works"] for r in rows if 2020 <= r["year"] <= 2024)
+    feats = compute_features([{"year": r["year"], "works": r["works"]} for r in rows])
+    return total, feats
+
+
+def _real_neighbors(query: str, topic: TopicRef, counts: list[YearCount], top_k: int = 5) -> list:
+    """Sibling topics in the same subfield, keeping those less crowded (fewer 2020-2024
+    works) than the query topic, scored by the momentum model, top_k by p_growth."""
+    try:
+        from pipeline.ingest import openalex
+
+        hits = openalex.search_topics(query, per_page=1)
+        if not hits:
+            return []
+        subfield = (hits[0].get("subfield") or {}).get("id")
+        field = (hits[0].get("field") or {}).get("display_name")
+        if not subfield:
+            return []
+        siblings = openalex.sibling_topics(subfield)
+    except Exception:
+        return []
+
+    this_total = sum(c.works for c in counts if 2020 <= c.year <= 2024)
+
+    scored: list[tuple[float, Neighbor]] = []
+    for s in siblings:
+        if s["openalex_id"] == topic.openalex_id:
+            continue
+        got = _works_2020_2024_and_feats(s["openalex_id"])
+        if got is None:
+            continue
+        total, feats = got
+        if total >= this_total:  # keep only LESS crowded topics
+            continue
+        p = None
+        if feats is not None:
+            p = predict_p_growth({**feats, "field": s.get("field") or field})
+        scored.append((
+            p if p is not None else 0.0,
+            Neighbor(openalex_id=s["openalex_id"], name=s["name"],
+                     works_last_5y=total, p_growth=round(p, 4) if p is not None else None),
+        ))
+
+    scored.sort(key=lambda x: x[0], reverse=True)
+    return [n for _, n in scored[:top_k]]

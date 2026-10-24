@@ -82,6 +82,26 @@ def enumerate_life_science_topics(max_topics: int | None = None) -> list[dict]:
     return list(seen.values())
 
 
+def sibling_topics(subfield_id: str, per_page: int = 50) -> list[dict]:
+    """List topics in a subfield (cached). Returns [{openalex_id, name, field}]."""
+    short = subfield_id.rsplit("/", 1)[-1]
+    params = {
+        "filter": f"subfield.id:subfields/{short}",
+        "per-page": per_page,
+        "sort": "works_count:desc",
+        **_auth_params(),
+    }
+    body = cached_get_json("openalex", f"{_BASE}/topics", params=params)
+    out = []
+    for t in body.get("results", []):
+        out.append({
+            "openalex_id": t["id"].rsplit("/", 1)[-1],
+            "name": t.get("display_name"),
+            "field": (t.get("field") or {}).get("display_name"),
+        })
+    return out
+
+
 def works_by_year(topic_id: str, from_year: int = 2015, to_year: int = 2024) -> list[dict]:
     """Yearly works count for a topic id, as [{year, works}]."""
     short_id = topic_id.rsplit("/", 1)[-1]

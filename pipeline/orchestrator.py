@@ -48,12 +48,13 @@ def run_pipeline(
     persist: bool = True,
     compound_chembl_id: str | None = None,
     run_id: str | None = None,
+    openalex_topic_id: str | None = None,
 ) -> PipelineResult:
     db = get_db() if persist else None
     run_id = run_id or (db.create_run(query) if db else "ephemeral")
 
     # --- stage 1: topic (safety gate inside) ---
-    topic = score_topic(query, weights=weights)
+    topic = score_topic(query, weights=weights, openalex_topic_id=openalex_topic_id)
     if db:
         db.save_report(run_id, "topic", topic)
         db.set_run_status(run_id, "topic")

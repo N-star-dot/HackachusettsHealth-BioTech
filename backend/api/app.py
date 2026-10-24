@@ -90,6 +90,7 @@ class RunRequest(BaseModel):
     seed: int = 42
     reader_cv: float = Field(default=0.05, ge=0.0, le=0.5)
     compound_chembl_id: str | None = None
+    openalex_topic_id: str | None = None  # B2.2: run a chosen topic directly, skip search
     mode: Literal["sync", "async"] = "sync"  # B2.1
 
 
@@ -148,7 +149,7 @@ def run(req: RunRequest) -> RunResponse:
                 run_pipeline(
                     req.query, weights=req.weights, runs=req.runs, seed=req.seed,
                     reader_cv=req.reader_cv, compound_chembl_id=req.compound_chembl_id,
-                    run_id=run_id,
+                    run_id=run_id, openalex_topic_id=req.openalex_topic_id,
                 )
             except Exception as exc:  # record the failure; GET exposes status='error'
                 get_db().set_run_error(run_id, f"{type(exc).__name__}: {exc}")
@@ -159,6 +160,7 @@ def run(req: RunRequest) -> RunResponse:
     result = run_pipeline(
         req.query, weights=req.weights, runs=req.runs, seed=req.seed,
         reader_cv=req.reader_cv, compound_chembl_id=req.compound_chembl_id,
+        openalex_topic_id=req.openalex_topic_id,
     )
     return RunResponse(
         run_id=result.run_id,
