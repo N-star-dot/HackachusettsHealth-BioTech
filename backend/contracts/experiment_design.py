@@ -62,14 +62,26 @@ class Volumes(BaseModel):
 
 
 class RationaleItem(BaseModel):
-    """One literature claim supporting the design. Every claim must be mechanically
-    checkable: it points at a specific piece of evidence (a ChEMBL activity record or a
-    verbatim abstract quote) that the deterministic checker can verify.
+    """One piece of evidence supporting the design.
+
+    SECURITY MODEL: only text that code can prove is ever marked verified. Free text the
+    LLM wrote in its own words NEVER gets a green badge, because code cannot prove a
+    paraphrase matches its source, nor catch negation or unit swaps.
+
+      * chembl_activity — `claim` is re-rendered by code from the record itself (no free
+        text survives), verified iff the activity id belongs to the pair.
+      * abstract_quote  — the VERIFIED thing is `quote` (an exact run of whole sentences
+        from the cited abstract). `model_note` is the LLM's own wording, shown separately
+        and NEVER verified.
 
     Fields are additive with defaults so pre-existing mocks still validate.
     """
 
-    claim: str
+    claim: str = Field(
+        default="",
+        description="For chembl_activity: a code-rendered sentence. For abstract_quote: "
+                    "the model's own note (NOT verified) — surfaced for the reader only.",
+    )
     pmid: str = ""
     evidence_type: str = Field(
         default="chembl_activity",
@@ -80,11 +92,19 @@ class RationaleItem(BaseModel):
         description="ChEMBL activity id (chembl_activity) or the PMID (abstract_quote).",
     )
     quote: str | None = Field(
-        default=None, description="Verbatim sentence copied from the cited abstract."
+        default=None,
+        description="For abstract_quote: the exact sentence(s) from the abstract that are "
+                    "verified. This, not `claim`, is what a green badge attests to.",
+    )
+    model_note: str | None = Field(
+        default=None,
+        description="The LLM's own paraphrase/interpretation. NEVER verified — display as "
+                    "'model's note, not verified'.",
     )
     status: str = Field(
         default="unverified",
-        description="'verified', 'partial', or 'unverified' — set by the checker.",
+        description="'verified', 'partial', or 'unverified' — set by the checker. For "
+                    "abstract_quote this is the status of the QUOTE, not the model_note.",
     )
     reason: str | None = Field(default=None, description="Why it isn't fully verified.")
     verified: bool = Field(
@@ -110,6 +130,10 @@ class ExperimentDesign(BaseModel):
     pipette: str = "flex_1channel_1000"
     tiprack: str = "opentrons_flex_96_tiprack_200ul"
     rationale: list[RationaleItem] = Field(default_factory=list)
+    notes: list[str] = Field(
+        default_factory=list,
+        description="Design-level notes for the UI, e.g. 'top_nM capped at 100000 nM'.",
+    )
 
     @model_validator(mode="after")
     def _warn_small_transfer(self) -> "ExperimentDesign":

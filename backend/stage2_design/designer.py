@@ -57,24 +57,23 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
     used = dilution.points * replicates + controls.positive_wells + controls.negative_wells
     assert used <= _WELLS, f"design needs {used} wells > {_WELLS}"
 
-    # rationale: one claim per source paper, up to 5, each citing that paper's own value.
-    # Claim wording keeps the IC50 value as the ONLY bare number — ChEMBL ids stay glued
-    # to 'CHEMBL' and we avoid a standalone '50' from 'IC50' — so the checker's
-    # "every number in the claim equals the record value" rule is clean.
+    # rationale: one item per source paper, up to 5. The claim text here is a placeholder;
+    # the checker RE-RENDERS it canonically from the record, so nothing here is forgeable.
     papers = prior.get("papers", [])[:5]
     rationale: list[RationaleItem] = []
     for p in papers:
-        v = p["value_nM"]
-        claim = (f"A half-maximal inhibitory concentration of {v:g} nM was reported for "
-                 f"compound {compound} against target {target} in ChEMBL.")
         rationale.append(RationaleItem(
-            claim=claim,
+            claim="",  # checker fills this from the record
             pmid="",
             evidence_type="chembl_activity",
             evidence_id=str(p["activity_id"]),
             quote=None,
-            status="unverified",  # the checker will promote to 'verified'
+            status="unverified",  # the checker promotes to 'verified' if the id matches
         ))
+
+    notes: list[str] = []
+    if capped:
+        notes.append(f"top_nM capped at {_MAX_TOP_nM:g} nM (uncapped would exceed it)")
 
     design = ExperimentDesign(
         design_id=design_id,
@@ -102,10 +101,8 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
         pipette="flex_1channel_1000",
         tiprack="opentrons_flex_96_tiprack_200ul",
         rationale=rationale,
+        notes=notes,
     )
-    if capped:
-        object.__setattr__(design, "_top_capped_note",
-                           f"top_nM capped at {_MAX_TOP_nM:g} nM (uncapped would exceed it)")
     return design
 
 

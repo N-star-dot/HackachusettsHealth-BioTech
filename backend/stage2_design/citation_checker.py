@@ -1,16 +1,16 @@
 """Deterministic citation checker. Owner B.
 
-Governing rule: the checker MAY wrongly flag a true claim, but it must NEVER pass a
-false one. So every branch is conservative — anything that doesn't fully prove out is
-'partial' or 'unverified', never 'verified'.
+SECURITY MODEL (the hard rule): only text that CODE can prove is ever marked verified.
+Nothing the LLM wrote in its own words gets a green badge — code cannot prove a
+paraphrase preserves meaning, nor catch negation or unit swaps.
 
-Two evidence types:
-  * chembl_activity — verified only if the activity id belongs to THIS pair and every
-    number in the claim equals that record's value.
-  * abstract_quote  — verified only if the pmid is in this pair's evidence set, AND the
-    lowercased normalised quote is a substring of that pmid's stored abstract, AND every
-    number in the claim appears in the quote. If pmid+quote pass but a number fails ->
-    'partial'. Anything else -> 'unverified' with a reason.
+  * chembl_activity — we IGNORE the incoming claim text and re-render it from the record
+    with one canonical template. Verified iff the activity id belongs to this pair. There
+    is no free text left to forge.
+  * abstract_quote — the verified thing is the QUOTE, not the model's note. A quote is
+    verified only if (after normalising both sides) it equals a run of one-or-more WHOLE
+    sentences of that pmid's abstract, is >= 8 words, and names the compound or target.
+    The LLM's own sentence rides along as `model_note` and is NEVER verified.
 """
 
 from __future__ import annotations
@@ -20,49 +20,54 @@ import unicodedata
 
 from backend.contracts import ExperimentDesign, RationaleItem
 
-# Match standalone numeric tokens only — a digit run NOT glued to letters (so 'CHEMBL554'
-# and inline ids don't leak in). Optional thousands separators and decimals.
-_NUM_RE = re.compile(r"(?<![A-Za-z0-9])\d[\d,]*\.?\d*(?![A-Za-z0-9])")
+_MIN_QUOTE_WORDS = 8
 
 
 def _normalise(text: str) -> str:
-    """NFKC + collapsed whitespace + lowercase. Must match how abstracts are stored."""
+    """NFKC + collapsed whitespace + lowercase. Applied to BOTH sides at check time, so
+    case and whitespace never matter."""
     text = unicodedata.normalize("NFKC", text or "")
     text = re.sub(r"\s+", " ", text).strip()
     return text.lower()
 
 
-def _numbers(text: str) -> list[float]:
-    """Extract numeric tokens, stripping thousands separators."""
-    out = []
-    for tok in _NUM_RE.findall(text or ""):
-        tok = tok.replace(",", "")
-        if tok in ("", "."):
-            continue
-        try:
-            out.append(float(tok))
-        except ValueError:
-            continue
-    return out
+def _split_sentences(abstract: str) -> list[str]:
+    """Split an abstract into sentences on ., !, ? boundaries. Coarse but sufficient:
+    we only need the set of whole-sentence spans to compare a quote against."""
+    parts = re.split(r"(?<=[.!?])\s+", abstract.strip())
+    return [p.strip() for p in parts if p.strip()]
 
 
-def _nums_match(claim_nums: list[float], allowed: list[float], tol: float = 0.02) -> bool:
-    """Every number in the claim must equal some allowed value (within a small rel. tol
-    for float formatting). Empty claim-number list trivially matches."""
-    for cn in claim_nums:
-        if not any(abs(cn - a) <= tol * max(abs(a), 1.0) for a in allowed):
-            return False
-    return True
+def _sentence_runs(sentences: list[str]) -> set[str]:
+    """All normalised runs of consecutive whole sentences (1..n). A verified quote must
+    equal one of these — a partial-sentence snippet can't match."""
+    runs: set[str] = set()
+    norm = [_normalise(s) for s in sentences]
+    for i in range(len(norm)):
+        acc = norm[i]
+        runs.add(acc)
+        for j in range(i + 1, len(norm)):
+            acc = acc + " " + norm[j]
+            runs.add(acc)
+    return runs
+
+
+def _canonical_chembl_claim(value_nM: float, compound: str, target: str) -> str:
+    """The ONE template for a ChEMBL activity claim. Code owns every character."""
+    return (f"ChEMBL activity record: half-maximal inhibitory concentration "
+            f"{value_nM:g} nM for compound {compound} against target {target}.")
 
 
 def check_claim(
     item: RationaleItem,
     pair_activity_values: dict[str, float],
     evidence_abstracts: dict[str, str],
+    compound_id: str = "",
+    target_id: str = "",
+    compound_names: tuple[str, ...] = (),
+    target_names: tuple[str, ...] = (),
 ) -> RationaleItem:
-    """Verify one claim. `pair_activity_values` maps activity_id -> value_nM for THIS
-    pair; `evidence_abstracts` maps pmid -> normalised abstract text for THIS pair."""
-    claim_nums = _numbers(item.claim)
+    """Verify one rationale item. See module docstring for the security model."""
 
     if item.evidence_type == "chembl_activity":
         aid = str(item.evidence_id)
@@ -71,39 +76,57 @@ def check_claim(
                 "status": "unverified",
                 "reason": f"activity {aid} not in this pair's records",
             })
+        # Re-render the claim from the record itself — discard whatever free text came in.
         value = pair_activity_values[aid]
-        if not _nums_match(claim_nums, [value]):
-            return item.model_copy(update={
-                "status": "unverified",
-                "reason": f"claim numbers {claim_nums} != record value {value}",
-            })
-        return item.model_copy(update={"status": "verified", "reason": None})
+        canonical = _canonical_chembl_claim(value, compound_id, target_id)
+        return item.model_copy(update={
+            "claim": canonical,
+            "model_note": None,
+            "status": "verified",
+            "reason": None,
+        })
 
     if item.evidence_type == "abstract_quote":
         pmid = str(item.evidence_id or item.pmid)
+        # whatever the model wrote in `claim` is just a note, never verified
+        model_note = item.model_note or item.claim or None
+
         if pmid not in evidence_abstracts:
             return item.model_copy(update={
-                "status": "unverified",
+                "model_note": model_note, "status": "unverified",
                 "reason": f"pmid {pmid} not in this pair's evidence set",
             })
         if not item.quote:
             return item.model_copy(update={
-                "status": "unverified", "reason": "no quote provided",
+                "model_note": model_note, "status": "unverified",
+                "reason": "no quote provided",
             })
-        abstract = evidence_abstracts[pmid]
+
         norm_quote = _normalise(item.quote)
-        if norm_quote not in abstract:
+        if len(norm_quote.split()) < _MIN_QUOTE_WORDS:
             return item.model_copy(update={
-                "status": "unverified", "reason": "quote not found in abstract",
+                "model_note": model_note, "status": "unverified",
+                "reason": f"quote has <{_MIN_QUOTE_WORDS} words",
             })
-        # pmid + quote pass; now the numbers in the CLAIM must all appear in the QUOTE
-        quote_nums = _numbers(item.quote)
-        if not _nums_match(claim_nums, quote_nums):
+
+        runs = _sentence_runs(_split_sentences(evidence_abstracts[pmid]))
+        if norm_quote not in runs:
             return item.model_copy(update={
-                "status": "partial",
-                "reason": "quote found but a claim number is absent from it",
+                "model_note": model_note, "status": "unverified",
+                "reason": "quote is not an exact run of whole sentences from the abstract",
             })
-        return item.model_copy(update={"status": "verified", "reason": None})
+
+        names = tuple(_normalise(n) for n in (compound_names + target_names) if n)
+        if names and not any(n in norm_quote for n in names):
+            return item.model_copy(update={
+                "model_note": model_note, "status": "unverified",
+                "reason": "quote does not mention the compound or target",
+            })
+
+        # The QUOTE is a verbatim sentence from the paper. That is all a green badge means.
+        return item.model_copy(update={
+            "model_note": model_note, "status": "verified", "reason": None,
+        })
 
     return item.model_copy(update={
         "status": "unverified", "reason": f"unknown evidence_type '{item.evidence_type}'",
@@ -114,24 +137,32 @@ def check_citations(
     design: ExperimentDesign,
     pair: dict | None = None,
     evidence_abstracts: dict[str, str] | None = None,
+    compound_names: tuple[str, ...] = (),
+    target_names: tuple[str, ...] = (),
 ) -> ExperimentDesign:
-    """Check every rationale item against this design's pair evidence.
-
-    `pair` is a demo-pair dict (for chembl_activity values); `evidence_abstracts` maps
-    pmid -> normalised abstract text (for abstract_quote). Either may be None/empty.
-    """
+    """Check every rationale item against this design's evidence."""
     pair_values: dict[str, float] = {}
     if pair:
         for p in pair.get("prior", {}).get("papers", []):
             pair_values[str(p["activity_id"])] = float(p["value_nM"])
     evidence_abstracts = evidence_abstracts or {}
+    compound_id = design.assay.compound_chembl_id
+    target_id = design.assay.target_chembl_id
+    # the ChEMBL ids themselves always count as acceptable names-in-quote
+    cnames = compound_names or (compound_id,)
+    tnames = target_names or (target_id,)
 
-    checked = [check_claim(item, pair_values, evidence_abstracts) for item in design.rationale]
+    checked = [
+        check_claim(item, pair_values, evidence_abstracts,
+                    compound_id=compound_id, target_id=target_id,
+                    compound_names=cnames, target_names=tnames)
+        for item in design.rationale
+    ]
     return design.model_copy(update={"rationale": checked})
 
 
 def citation_error_rate(design: ExperimentDesign) -> float:
-    """Share of claims that are not fully verified. Reported before/after checking."""
+    """Share of rationale items not fully verified. Reported before/after checking."""
     if not design.rationale:
         return 0.0
     bad = sum(1 for r in design.rationale if r.status != "verified")
