@@ -27,7 +27,7 @@ from backend.contracts import (
     SourceType,
     StepLocation,
 )
-from backend.stage3_protocol.compiler import DECK
+from backend.stage3_protocol.compiler import DECK, cost_model
 
 try:  # opentrons is optional (install with: pip install -e ".[robot]")
     from opentrons import simulate as _ot_simulate  # type: ignore
@@ -146,14 +146,22 @@ def _deck_slots() -> list[DeckSlot]:
 
 
 def _estimate_cost(design: ExperimentDesign) -> CostBreakdown:
-    """Formula estimate (fallback when the simulator didn't run). Labelled 'assumed'."""
+    """Predicted cost when the simulator didn't run. Labelled 'assumed'.
+
+    Delegates to the single source of truth cost_model() (the same predictor stages 2
+    and 4 use), so the fallback tips/compound_uL match what the real run log would count
+    instead of a second, divergent formula. robot_steps stays an estimate since there is
+    no run log to count leaf actions from.
+    """
+    predicted = cost_model(design)
     points = design.dilution.points
-    tips = points + 2  # diluent fill + seed + serial transfers (template reuses some)
-    compound_uL = design.volumes_uL.transfer * points
     robot_steps = points * 2 + 4
     return CostBreakdown(
-        tips=tips, compound_uL=compound_uL, plates=1, robot_steps=robot_steps,
-        source=Source(type=SourceType.ASSUMED, id="cost-formula"),
+        tips=predicted["tips"],
+        compound_uL=predicted["compound_uL"],
+        plates=predicted["plates"],
+        robot_steps=robot_steps,
+        source=Source(type=SourceType.ASSUMED, id="cost-model"),
     )
 
 
