@@ -23,7 +23,7 @@ from backend.contracts import (
     Source,
     Volumes,
 )
-from backend.contracts.common import SourceType, source_url
+from backend.contracts.common import SourceType, chembl_compound_url, source_url
 from backend.stage2_design.demo_pairs import get_demo_pair
 
 _MAX_TOP_nM = 100_000.0
@@ -99,7 +99,9 @@ def design_from_pair(pair: dict, design_id: str = "d-001") -> ExperimentDesign:
             source=Source(
                 type=SourceType.CHEMBL_ACTIVITY,
                 id=(_prior_ids := ",".join(str(a) for a in prior.get("activity_ids", [])[:10]) or "none"),
-                url=source_url(SourceType.CHEMBL_ACTIVITY, _prior_ids),
+                # link the compound report card (human-viewable) rather than a raw
+                # activity id, so the IC50 prior's source opens a useful page.
+                url=chembl_compound_url(compound) or source_url(SourceType.CHEMBL_ACTIVITY, _prior_ids),
             ),
         ),
         dilution=dilution,

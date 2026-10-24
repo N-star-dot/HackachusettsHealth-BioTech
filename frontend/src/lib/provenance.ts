@@ -18,13 +18,15 @@ export const KIND_LABEL: Record<string, string> = {
 export function buildUrl(type: SourceType | string, id: string): string | null {
   switch (type) {
     case "openalex":
-      if (id.startsWith("T")) return `https://api.openalex.org/topics/${id}`;
-      if (id.includes("from_publication_date")) return `https://api.openalex.org/works?filter=topics.id:${id}`;
+      // the openalex.org website page, not the api.openalex.org JSON
+      if (id.startsWith("T")) return `https://openalex.org/${id}`;
       return null;
     case "chembl_activity": {
       const first = id.split(",")[0].trim();
       if (!first || first.toLowerCase() === "none" || first === "placeholder") return null;
-      return `https://www.ebi.ac.uk/chembl/api/data/activity/${first}.json`;
+      // compound report cards link straight; a bare activity id uses the explore page
+      if (first.toUpperCase().startsWith("CHEMBL")) return `https://www.ebi.ac.uk/chembl/explore/compound/${first}`;
+      return `https://www.ebi.ac.uk/chembl/explore/activities/${first}`;
     }
     case "pubmed":
       return `https://pubmed.ncbi.nlm.nih.gov/${id}/`;

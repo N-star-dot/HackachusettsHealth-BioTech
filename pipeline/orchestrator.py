@@ -93,8 +93,14 @@ def run_pipeline(
         db.save_report(run_id, "sim", sim)
         db.set_run_status(run_id, "sim")
 
-    # --- stage 4: uncertainty + planner ---
+    # --- stage 4: uncertainty, then the planner (saved separately so the dashboard
+    #     reveals the uncertainty numbers immediately; the planner's extra Monte Carlo
+    #     reruns fill in "best next changes" a moment later instead of blocking). ---
     uncertainty = run_uncertainty(design, runs=runs, seed=seed, reader_cv=reader_cv)
+    if db:
+        db.save_report(run_id, "uncertainty", uncertainty)
+        db.set_run_status(run_id, "uncertainty")
+
     uncertainty.next_experiments = plan_next_experiments(design, uncertainty)
     if db:
         db.save_report(run_id, "uncertainty", uncertainty)

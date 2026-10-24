@@ -42,18 +42,20 @@ class SafetyGate(BaseModel):
 
 
 def source_url(source_type: "SourceType | str", id_: str) -> str | None:
-    """Build the canonical link for a source kind + id (B1.6). None when there is no
-    meaningful link (simulator, simulated, assumed). For comma-separated ChEMBL activity
-    ids, links the first one."""
+    """Build the canonical link for a source kind + id (B1.6). Links point at
+    human-viewable pages, not raw API/JSON endpoints. None when there is no meaningful
+    link (simulator, simulated, assumed)."""
     t = source_type.value if isinstance(source_type, SourceType) else str(source_type)
     if t == SourceType.OPENALEX.value:
         if id_.startswith("T"):
-            return f"https://api.openalex.org/topics/{id_}"
+            # the openalex.org website page, not the api.openalex.org JSON
+            return f"https://openalex.org/{id_}"
         return None  # 'reference: N topics' etc. have no single link
     if t == SourceType.CHEMBL_ACTIVITY.value:
         first = id_.split(",")[0].strip()
         if first and first.lower() not in ("none", "placeholder"):
-            return f"https://www.ebi.ac.uk/chembl/api/data/activity/{first}.json"
+            # human-viewable ChEMBL interface (an activity id), not the .json endpoint
+            return f"https://www.ebi.ac.uk/chembl/explore/activities/{first}"
         return None
     if t == SourceType.PUBMED.value:
         return f"https://pubmed.ncbi.nlm.nih.gov/{id_}/"
@@ -63,3 +65,11 @@ def source_url(source_type: "SourceType | str", id_: str) -> str | None:
     if t == SourceType.SPEC.value:
         return "https://docs.opentrons.com/flex/system-description/pipettes/"
     return None  # simulator, simulated, assumed, semantic_scholar(default)
+
+
+def chembl_compound_url(compound_chembl_id: str) -> str | None:
+    """Human-viewable ChEMBL compound report card (used for the IC50 prior's link)."""
+    cid = compound_chembl_id.strip()
+    if cid and cid.upper().startswith("CHEMBL"):
+        return f"https://www.ebi.ac.uk/chembl/explore/compound/{cid}"
+    return None

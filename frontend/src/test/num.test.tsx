@@ -22,9 +22,12 @@ describe("format", () => {
 
 describe("buildUrl", () => {
   it("builds canonical links", () => {
-    expect(buildUrl("openalex", "T10966")).toBe("https://api.openalex.org/topics/T10966");
+    expect(buildUrl("openalex", "T10966")).toBe("https://openalex.org/T10966");
     expect(buildUrl("chembl_activity", "190222,1")).toBe(
-      "https://www.ebi.ac.uk/chembl/api/data/activity/190222.json",
+      "https://www.ebi.ac.uk/chembl/explore/activities/190222",
+    );
+    expect(buildUrl("chembl_activity", "CHEMBL554")).toBe(
+      "https://www.ebi.ac.uk/chembl/explore/compound/CHEMBL554",
     );
     expect(buildUrl("pubmed", "14684309")).toBe("https://pubmed.ncbi.nlm.nih.gov/14684309/");
     expect(buildUrl("simulator", "x")).toBeNull();
