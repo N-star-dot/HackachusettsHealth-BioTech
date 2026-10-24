@@ -21,6 +21,7 @@ def test_offline_topic_has_no_neighbors(monkeypatch):
     def _boom(*a, **k):
         raise RuntimeError("down")
 
+    monkeypatch.setattr("pipeline.ingest.openalex.search_works_group_by_topic", _boom)
     monkeypatch.setattr("pipeline.ingest.openalex.search_topics", _boom)
     r = score_topic("some benign kinase topic")
     assert r.neighbors == []

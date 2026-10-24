@@ -32,6 +32,40 @@ def search_topics(query: str, per_page: int = 10) -> list[dict]:
     return body.get("results", [])
 
 
+def search_works_group_by_topic(query: str, per_page: int = 10) -> list[dict]:
+    """Resolve a natural-language query to topics by searching WORKS and grouping them by
+    primary_topic. This matches questions like "JAK inhibitors in autoimmune disease" that
+    the /topics name search misses. Returns the top groups as
+    [{topic_id, name, count}, ...] sorted by work count (OpenAlex already sorts desc)."""
+    params = {"search": query, "group_by": "primary_topic.id",
+              "per-page": per_page, **_auth_params()}
+    body = cached_get_json("openalex", f"{_BASE}/works", params=params)
+    out: list[dict] = []
+    for g in body.get("group_by", []):
+        key = g.get("key") or ""
+        tid = key.rsplit("/", 1)[-1]
+        if not tid.startswith("T"):
+            continue
+        out.append({
+            "topic_id": tid,
+            "name": g.get("key_display_name"),
+            "count": int(g.get("count", 0)),
+        })
+    return out
+
+
+def topic_meta(topic_id: str) -> dict:
+    """Fetch a topic's metadata ({field, subfield, display_name}) by id (cached)."""
+    short = topic_id.rsplit("/", 1)[-1]
+    body = cached_get_json("openalex", f"{_BASE}/topics/{short}")
+    return {
+        "openalex_id": short,
+        "name": body.get("display_name"),
+        "field": (body.get("field") or {}).get("display_name"),
+        "subfield_id": (body.get("subfield") or {}).get("id"),
+    }
+
+
 # OpenAlex domain ids for the life/health sciences (the model's universe).
 LIFE_SCIENCE_DOMAINS: tuple[int, ...] = (1, 4)  # 1 = Life Sciences, 4 = Health Sciences
 

@@ -16,6 +16,7 @@ def test_offline_topic_is_honest(monkeypatch):
     def _boom(*a, **k):
         raise RuntimeError("openalex down")
 
+    monkeypatch.setattr("pipeline.ingest.openalex.search_works_group_by_topic", _boom)
     monkeypatch.setattr("pipeline.ingest.openalex.search_topics", _boom)
 
     report = scoring.score_topic("some benign kinase topic")
@@ -34,10 +35,14 @@ def test_offline_topic_is_honest(monkeypatch):
 def test_online_topic_sources_momentum_to_openalex(monkeypatch):
     """When counts resolve, momentum's axis source is the OpenAlex counts url."""
     monkeypatch.setattr(
-        "pipeline.ingest.openalex.search_topics",
-        lambda q, per_page=1: [{"id": "https://openalex.org/T10966",
-                                "display_name": "Liver physiology",
-                                "field": {"display_name": "Medicine"}}],
+        "pipeline.ingest.openalex.search_works_group_by_topic",
+        lambda q, per_page=10: [{"topic_id": "T10966",
+                                 "name": "Liver physiology", "count": 5000}],
+    )
+    monkeypatch.setattr(
+        "pipeline.ingest.openalex.topic_meta",
+        lambda tid: {"openalex_id": tid, "name": "Liver physiology",
+                     "field": "Medicine", "subfield_id": None},
     )
     monkeypatch.setattr(
         "pipeline.ingest.openalex.works_by_year",

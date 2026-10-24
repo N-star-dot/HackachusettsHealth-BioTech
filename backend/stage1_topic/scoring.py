@@ -50,20 +50,39 @@ def _placeholder_counts(query: str) -> tuple[TopicRef, list[YearCount], str | No
 def _counts_from_source(query: str) -> tuple[TopicRef, list[YearCount], str | None]:
     """Resolve the top matching OpenAlex topic and its 2015-2024 yearly counts (cached).
 
-    Returns (topic_ref, year_counts, field). Falls back to a placeholder series if the
-    network/key is unavailable so the stage still produces a valid report offline.
+    Resolves the topic by searching WORKS for the query and grouping by primary_topic
+    (so natural-language questions match), then falls back to the /topics name search, and
+    finally to a placeholder series if the network/key is unavailable.
     """
     try:
         from pipeline.ingest import openalex
 
-        hits = openalex.search_topics(query, per_page=1)
-        if not hits:
+        oa_id: str | None = None
+        name: str | None = None
+        field: str | None = None
+
+        # 1) works grouped by primary_topic (matches NL queries the name search misses)
+        groups = openalex.search_works_group_by_topic(query, per_page=10)
+        if groups:
+            oa_id = groups[0]["topic_id"]
+            name = groups[0]["name"]
+            meta = openalex.topic_meta(oa_id)
+            field = meta.get("field")
+            name = name or meta.get("name")
+
+        # 2) fall back to the topic name search
+        if not oa_id:
+            hits = openalex.search_topics(query, per_page=1)
+            if hits:
+                hit = hits[0]
+                oa_id = hit["id"].rsplit("/", 1)[-1]
+                name = hit.get("display_name") or query
+                field = (hit.get("field") or {}).get("display_name")
+
+        if not oa_id:
             return _placeholder_counts(query)
-        hit = hits[0]
-        oa_id = hit["id"].rsplit("/", 1)[-1]
-        name = hit.get("display_name") or query
-        field = (hit.get("field") or {}).get("display_name")
-        topic = TopicRef(openalex_id=oa_id, name=name)
+
+        topic = TopicRef(openalex_id=oa_id, name=name or query)
         rows = openalex.works_by_year(oa_id)
         counts = [
             YearCount(year=r["year"], works=r["works"],
@@ -265,8 +284,13 @@ def recompute_axes(report: TopicReport, design, sim) -> TopicReport:
     axis_sources = dict(m.axis_sources)
     axis_notes = dict(m.axis_notes)
 
+    # If stage 1 could not reach OpenAlex (offline), momentum and novelty stay unavailable
+    # here too: do NOT revive them from the reference set, or an offline run would jump its
+    # viability at the end (the placeholder topic looks maximally "novel").
+    offline = report.offline or report.topic.openalex_id == "T00000"
+
     # novelty (OpenAlex reference set; stays 'assumed' if the cache can't supply it)
-    nov = _reference_novelty(report.topic)
+    nov = None if offline else _reference_novelty(report.topic)
     if nov is not None:
         axes["novelty"], axis_sources["novelty"], axis_notes["novelty"] = nov
 
@@ -322,29 +346,27 @@ def _works_2020_2024_and_feats(openalex_id: str) -> tuple[int, dict | None] | No
 
 
 def _real_neighbors(query: str, topic: TopicRef, counts: list[YearCount], top_k: int = 5) -> list:
-    """Sibling topics in the same subfield, keeping those less crowded (fewer 2020-2024
-    works) than the query topic, scored by the momentum model, top_k by p_growth."""
+    """Nearby topics from the SAME works search: the other topics the query's papers map
+    to (grouped by primary_topic). These are genuinely related, unlike raw subfield
+    siblings. Keep those less crowded (fewer 2020-2024 works) than the query topic, score
+    each with the momentum model, and return the top_k by p_growth."""
     try:
         from pipeline.ingest import openalex
 
-        hits = openalex.search_topics(query, per_page=1)
-        if not hits:
-            return []
-        subfield = (hits[0].get("subfield") or {}).get("id")
-        field = (hits[0].get("field") or {}).get("display_name")
-        if not subfield:
-            return []
-        siblings = openalex.sibling_topics(subfield)
+        groups = openalex.search_works_group_by_topic(query, per_page=10)
     except Exception:
+        return []
+    if not groups:
         return []
 
     this_total = sum(c.works for c in counts if 2020 <= c.year <= 2024)
 
     scored: list[tuple[float, Neighbor]] = []
-    for s in siblings:
-        if s["openalex_id"] == topic.openalex_id:
+    for g in groups:
+        gid = g["topic_id"]
+        if gid == topic.openalex_id:
             continue
-        got = _works_2020_2024_and_feats(s["openalex_id"])
+        got = _works_2020_2024_and_feats(gid)
         if got is None:
             continue
         total, feats = got
@@ -352,10 +374,14 @@ def _real_neighbors(query: str, topic: TopicRef, counts: list[YearCount], top_k:
             continue
         p = None
         if feats is not None:
-            p = predict_p_growth({**feats, "field": s.get("field") or field})
+            try:
+                field = openalex.topic_meta(gid).get("field")
+            except Exception:
+                field = None
+            p = predict_p_growth({**feats, "field": field})
         scored.append((
             p if p is not None else 0.0,
-            Neighbor(openalex_id=s["openalex_id"], name=s["name"],
+            Neighbor(openalex_id=gid, name=g.get("name") or gid,
                      works_last_5y=total, p_growth=round(p, 4) if p is not None else None),
         ))
 
