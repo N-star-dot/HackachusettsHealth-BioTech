@@ -1,0 +1,16 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Typecheck frontend on save",
+      "trigger": "PostFileSave",
+      "description": "Run the frontend TypeScript typecheck when a frontend .ts/.tsx file is saved.",
+      "matcher": "frontend/src/.*\\.(ts|tsx)$",
+      "action": {
+        "type": "command",
+        "command": "npm --prefix frontend run typecheck",
+        "timeout": 120
+      }
+    }
+  ]
+}

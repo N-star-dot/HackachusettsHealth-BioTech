@@ -1,0 +1,14 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "Frontend contract sync",
+      "trigger": "PostFileSave",
+      "matcher": "backend/contracts/.*\\.py$",
+      "action": {
+        "type": "agent",
+        "prompt": "A backend contract changed. Update frontend/src/api/types.ts, schemas.ts and normalize.ts to match, keeping old fields readable. If the API is running, run npm --prefix frontend run gen:api."
+      }
+    }
+  ]
+}
