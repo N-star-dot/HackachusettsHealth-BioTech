@@ -160,3 +160,99 @@ def score_topic(query: str, weights: dict[str, float] | None = None) -> TopicRep
         safety=safety,
         offline=offline,
     )
+
+
+# --- B1.5: compute the four fixed axes once stages 2 and 3 have run ----------
+
+def _topic_works_2020_2024(openalex_id: str) -> int | None:
+    """2020-2024 works total for a topic from the cached works_by_year response, or None."""
+    try:
+        from pipeline.ingest import openalex
+
+        rows = openalex.works_by_year(openalex_id)  # cached; no network if warm
+        return sum(r["works"] for r in rows if 2020 <= r["year"] <= 2024)
+    except Exception:
+        return None
+
+
+def _reference_novelty(topic: TopicRef) -> tuple[float, Source, str] | None:
+    """novelty = share of reference (training) topics with MORE 2020-2024 works than this
+    topic. Reference set = topic_features rows. Returns (value, source, note) or None if
+    the cache can't supply the counts."""
+    try:
+        from database import get_db
+
+        rows = get_db().all_topic_features()
+    except Exception:
+        return None
+    if not rows:
+        return None
+
+    this_total = _topic_works_2020_2024(topic.openalex_id)
+    if this_total is None:
+        return None
+
+    more = 0
+    counted = 0
+    for r in rows:
+        ref_total = _topic_works_2020_2024(r["openalex_id"])
+        if ref_total is None:
+            continue
+        counted += 1
+        if ref_total > this_total:
+            more += 1
+    if counted == 0:
+        return None
+    novelty = more / counted
+    return (
+        round(novelty, 4),
+        Source(type=SourceType.OPENALEX, id=f"reference: {counted} topics"),
+        "Share of reference topics with more 2020-2024 works than this one",
+    )
+
+
+def recompute_axes(report: TopicReport, design, sim) -> TopicReport:
+    """Recompute novelty/evidence/automatable/cost_time from the design + sim (B1.5) and
+    return an updated TopicReport. Momentum and weights are preserved; the total is
+    recomputed with ViabilityMatrix.weighted_total."""
+    m = report.matrix
+    axes = {
+        "momentum": m.momentum,
+        "novelty": m.novelty,
+        "evidence": m.evidence,
+        "automatable": m.automatable,
+        "cost_time": m.cost_time,
+    }
+    axis_sources = dict(m.axis_sources)
+    axis_notes = dict(m.axis_notes)
+
+    # novelty (OpenAlex reference set; stays 'assumed' if the cache can't supply it)
+    nov = _reference_novelty(report.topic)
+    if nov is not None:
+        axes["novelty"], axis_sources["novelty"], axis_notes["novelty"] = nov
+
+    # evidence = min(1, n_papers / 20)
+    if design is not None:
+        n_papers = design.prior_ic50.n_measurements
+        axes["evidence"] = round(min(1.0, n_papers / 20.0), 4)
+        axis_sources["evidence"] = design.prior_ic50.source
+        axis_notes["evidence"] = "20 or more independent papers counts as full evidence (our threshold)"
+
+    # automatable = 1.0 if the simulator passed else 0.0
+    if sim is not None:
+        axes["automatable"] = 1.0 if sim.simulator.passed else 0.0
+        axis_sources["automatable"] = Source(type=SourceType.SIMULATOR, id=sim.protocol_file)
+        axis_notes["automatable"] = "1 if the protocol passed the Opentrons simulator, else 0"
+
+    # cost_time = 1 - min(1, tips / 96)
+    if sim is not None:
+        axes["cost_time"] = round(1.0 - min(1.0, sim.cost.tips / 96.0), 4)
+        axis_sources["cost_time"] = Source(type=SourceType.SIMULATOR, id=sim.protocol_file)
+        axis_notes["cost_time"] = "Share of one 96-tip rack left unused"
+
+    total = ViabilityMatrix.weighted_total(axes, m.weights)
+    new_matrix = ViabilityMatrix(
+        **axes, weights=m.weights, total=round(total, 6),
+        axis_sources=axis_sources, axis_notes=axis_notes,
+    )
+    return report.model_copy(update={"matrix": new_matrix})

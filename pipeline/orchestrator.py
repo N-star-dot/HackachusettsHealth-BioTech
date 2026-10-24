@@ -15,7 +15,7 @@ from backend.contracts import (
     TopicReport,
     UncertaintyReport,
 )
-from backend.stage1_topic import score_topic
+from backend.stage1_topic import recompute_axes, score_topic
 from backend.stage2_design import check_citations, design_experiment
 from backend.stage2_design.demo_pairs import (
     evidence_abstracts_for,
@@ -96,6 +96,11 @@ def run_pipeline(
     uncertainty.next_experiments = plan_next_experiments(design, uncertainty)
     if db:
         db.save_report(run_id, "uncertainty", uncertainty)
+
+    # --- B1.5: recompute the four fixed matrix axes now that stages 2-3 have run ---
+    topic = recompute_axes(topic, design, sim)
+    if db:
+        db.save_report(run_id, "topic", topic)
         db.set_run_status(run_id, "done")
 
     return PipelineResult(run_id, topic, design, sim, uncertainty, pair=pair_info)
