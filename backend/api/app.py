@@ -183,7 +183,10 @@ def get_run(run_id: str) -> RunRecord:
 @app.post("/api/uncertainty", response_model=UncertaintyReport)
 def uncertainty(req: WhatIfRequest) -> UncertaintyReport:
     """Rerun stage 4 for a (possibly slider-modified) design. Powers the what-if UI."""
-    report = run_uncertainty(req.design, runs=req.runs, seed=req.seed, reader_cv=req.reader_cv)
+    try:
+        report = run_uncertainty(req.design, runs=req.runs, seed=req.seed, reader_cv=req.reader_cv)
+    except ValueError as exc:  # e.g. transfer below the pipette minimum (B0.7)
+        raise HTTPException(status_code=422, detail=str(exc))
     report.next_experiments = plan_next_experiments(req.design, report)
     return report
 
