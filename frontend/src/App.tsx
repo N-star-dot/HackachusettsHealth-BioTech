@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
-import { APP_NAME } from "./constants";
+import { useEffect, useRef, useState } from "react";
 import { StartScreen } from "./components/Shell/StartScreen";
+import { TopBar } from "./components/Shell/TopBar";
+import { TryAnother } from "./components/Shell/TryAnother";
+import { HistoryDrawer } from "./components/Shell/HistoryDrawer";
 import { Banner } from "./components/Shell/Banner";
 import { DeckPlaceholder } from "./components/Bench/DeckPlaceholder";
 import { Deck } from "./components/Bench/Deck";
@@ -21,11 +23,15 @@ import { useUIStore } from "./state/store";
 import styles from "./App.module.css";
 
 export function App() {
-  const { run, origin, start, openRecorded, openRunId, isRunning, error } = useRun();
+  const { run, origin, start, openRecorded, openRunId, isRunning, error, setRun } = useRun();
   const health = useHealth();
+  const question = useUIStore((s) => s.question);
   const setQuestion = useUIStore((s) => s.setQuestion);
   const [recorded, setRecorded] = useState<RecordedIndexEntry[]>([]);
   const [shared, setShared] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { loadRecordedIndex().then(setRecorded); }, []);
 
@@ -50,7 +56,33 @@ export function App() {
     }
   }, [run, topic, blocked]);
 
-  const pivot = (name: string) => { setQuestion(name); start(name); };
+  // A new run has arrived: scroll the notebook back to the top and flash a short confirmation.
+  const lastRunId = useRef<string | null>(null);
+  useEffect(() => {
+    if (run && run.run_id !== lastRunId.current) {
+      lastRunId.current = run.run_id;
+      scrollRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      if (topic) {
+        setToast(`Now showing ${topic.topic.name}`);
+        const t = setTimeout(() => setToast(null), 2600);
+        return () => clearTimeout(t);
+      }
+    }
+  }, [run, topic]);
+
+  const runQuestion = (q: string) => { setQuestion(q); start(q); };
+  const pivot = (name: string) => runQuestion(name);
+
+  const newQuestion = () => {
+    setRun(null);
+    setQuestion("");
+    setToast(null);
+    lastRunId.current = null;
+    window.history.replaceState(null, "", window.location.pathname);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
   const share = () => {
     if (!run) return;
     const url = `${window.location.origin}${window.location.pathname}?run=${run.run_id}`;
@@ -60,35 +92,48 @@ export function App() {
     });
   };
 
+  const status = origin === "recorded"
+    ? "Recorded run"
+    : serverDown ? "Can't reach server" : "Connected";
+
   return (
     <div className={styles.app}>
-      <header className={styles.topbar}>
-        <span className={styles.productName}>{APP_NAME}</span>
-        <div className={styles.topActions}>
-          {run && !blocked && (
-            <button className={styles.share} onClick={share}>
-              {shared ? "Link copied" : "Share"}
-            </button>
-          )}
-          <span className={styles.status}>
-            {origin === "recorded" ? "Recorded run" : serverDown ? "Can't reach server" : "Connected"}
-          </span>
-        </div>
-      </header>
+      <TopBar
+        question={question}
+        onQuestionChange={setQuestion}
+        onRun={runQuestion}
+        onNewQuestion={newQuestion}
+        onToggleHistory={() => setHistoryOpen((v) => !v)}
+        onShare={run && !blocked ? share : undefined}
+        shared={shared}
+        running={isRunning}
+        status={status}
+        hasRun={!!run}
+      />
 
-      <div className={styles.columns}>
+      {toast && <div className={styles.toast} role="status">{toast}</div>}
+
+      <HistoryDrawer
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        onOpenRun={openRunId}
+        onAsk={runQuestion}
+      />
+
+      <div className={styles.columns} ref={scrollRef}>
         <main className={styles.notebook}>
           {serverDown && !run && (
             <Banner kind="down" recorded={recorded} onOpenRecorded={openRecorded} />
           )}
 
           {!run ? (
-            <StartScreen onRun={start} />
+            <StartScreen onRun={runQuestion} />
           ) : blocked ? (
-            <BlockedPanel reasons={topic?.safety.reasons ?? []} />
+            <BlockedPanel reasons={topic?.safety.reasons ?? []} onAsk={newQuestion} />
           ) : (
             <div className={styles.stages}>
               {isRunning && <p className={styles.running}>Running all four stages. Usually a few seconds, longer on the first run of the day.</p>}
+              <TryAnother topic={topic} onPick={pivot} />
               {topic && (
                 <RevealStage order={0}>
                   <TopicSection topic={topic} />
@@ -118,12 +163,13 @@ export function App() {
   );
 }
 
-function BlockedPanel({ reasons }: { reasons: string[] }) {
+function BlockedPanel({ reasons, onAsk }: { reasons: string[]; onAsk: () => void }) {
   return (
     <div className={styles.blocked}>
       <h2>Lab Planner doesn't design experiments for this topic.</h2>
       <ul>{reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
       <p>It designs in-vitro dose-response experiments for benign targets.</p>
+      <button className={styles.askDifferent} onClick={onAsk}>Ask a different question</button>
     </div>
   );
 }

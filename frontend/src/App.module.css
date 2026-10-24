@@ -4,29 +4,20 @@
   flex-direction: column;
 }
 
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--space-3) var(--space-6);
-  border-bottom: 1px solid var(--rule);
-  background: var(--sheet);
-}
-
-.productName {
-  font-weight: 600;
-  font-stretch: 112%;
-  font-size: 18px;
-  line-height: 24px;
-}
-
-.status {
+/* A short confirmation that a new run replaced the old one (W1.1). */
+.toast {
+  position: fixed;
+  top: 64px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--ink);
+  color: var(--sheet);
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-button);
   font-size: 14px;
-  color: var(--graphite);
+  box-shadow: var(--shadow-pop);
+  z-index: 50;
 }
-
-.topActions { display: flex; align-items: center; gap: var(--space-3); }
-.share { background: none; border: 1px solid var(--ink); border-radius: var(--radius-button); padding: 2px var(--space-3); font-size: 14px; color: var(--ink); }
 
 /* Two columns at >=1200px: notebook (fluid) + bench (sticky). */
 .columns {
@@ -61,3 +52,4 @@
 .blocked { display: flex; flex-direction: column; gap: var(--space-3); }
 .blocked h2 { font-size: 24px; line-height: 30px; font-weight: 600; }
 .blocked ul { color: var(--flag); }
+.askDifferent { align-self: flex-start; background: var(--ink); color: var(--sheet); border: none; border-radius: var(--radius-button); padding: var(--space-2) var(--space-4); font-size: 14px; margin-top: var(--space-2); }
