@@ -3,6 +3,7 @@ import { APP_NAME } from "./constants";
 import { StartScreen } from "./components/Shell/StartScreen";
 import { Banner } from "./components/Shell/Banner";
 import { DeckPlaceholder } from "./components/Bench/DeckPlaceholder";
+import { Deck } from "./components/Bench/Deck";
 import { TopicSection } from "./components/Topic/TopicSection";
 import { DesignSection } from "./components/Design/DesignSection";
 import { ReviewThread } from "./components/Review/ReviewThread";
@@ -62,7 +63,7 @@ export function App() {
         </main>
 
         <aside className={styles.bench}>
-          <DeckPlaceholder />
+          {run && !blocked && run.sim ? <Deck sim={run.sim} /> : <DeckPlaceholder />}
           {run && !blocked && run.design && run.uncertainty && (
             <LabControls design={run.design} report={run.uncertainty} />
           )}
