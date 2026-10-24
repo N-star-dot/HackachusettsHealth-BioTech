@@ -94,6 +94,7 @@ class WhatIfRequest(BaseModel):
     runs: int = Field(default=1000, ge=1, le=5000)
     seed: int = 42
     reader_cv: float = Field(default=0.05, ge=0.0, le=0.5)
+    plan: bool = True  # B0.9: set False while dragging to skip the planner's extra reruns
 
 
 # --- routes -------------------------------------------------------------------
@@ -187,7 +188,8 @@ def uncertainty(req: WhatIfRequest) -> UncertaintyReport:
         report = run_uncertainty(req.design, runs=req.runs, seed=req.seed, reader_cv=req.reader_cv)
     except ValueError as exc:  # e.g. transfer below the pipette minimum (B0.7)
         raise HTTPException(status_code=422, detail=str(exc))
-    report.next_experiments = plan_next_experiments(req.design, report)
+    if req.plan:  # B0.9: skip the planner's extra Monte Carlo reruns while dragging
+        report.next_experiments = plan_next_experiments(req.design, report)
     return report
 
 
