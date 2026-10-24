@@ -23,6 +23,8 @@ from backend.contracts import (
     ProtocolStep,
     SimResult,
     SimulatorInfo,
+    Source,
+    SourceType,
     StepLocation,
 )
 from backend.stage3_protocol.compiler import DECK
@@ -144,11 +146,37 @@ def _deck_slots() -> list[DeckSlot]:
 
 
 def _estimate_cost(design: ExperimentDesign) -> CostBreakdown:
+    """Formula estimate (fallback when the simulator didn't run). Labelled 'assumed'."""
     points = design.dilution.points
     tips = points + 2  # diluent fill + seed + serial transfers (template reuses some)
     compound_uL = design.volumes_uL.transfer * points
     robot_steps = points * 2 + 4
-    return CostBreakdown(tips=tips, compound_uL=compound_uL, plates=1, robot_steps=robot_steps)
+    return CostBreakdown(
+        tips=tips, compound_uL=compound_uL, plates=1, robot_steps=robot_steps,
+        source=Source(type=SourceType.ASSUMED, id="cost-formula"),
+    )
+
+
+def _cost_from_steps(steps: list[ProtocolStep], protocol_file: str) -> CostBreakdown:
+    """Count cost from the parsed run log (B0.5):
+
+    tips        = number of pick_up_tip steps
+    compound_uL = total uL aspirated from the compound well (slot D3, well A2)
+    plates      = 1
+    robot_steps = number of leaf actions
+    Labelled with a 'simulator' Source so the dashboard shows 'counted from the run log'.
+    """
+    tips = sum(1 for s in steps if s.action == "pick_up_tip")
+    compound_uL = sum(
+        (s.uL or 0.0)
+        for s in steps
+        if s.action == "aspirate" and s.slot == "D3" and s.well == "A2"
+    )
+    robot_steps = sum(1 for s in steps if s.action in _LEAF_ACTIONS)
+    return CostBreakdown(
+        tips=tips, compound_uL=float(compound_uL), plates=1, robot_steps=robot_steps,
+        source=Source(type=SourceType.SIMULATOR, id=protocol_file),
+    )
 
 
 def simulate_protocol(protocol_file: Path, design: ExperimentDesign) -> SimResult:
@@ -168,7 +196,7 @@ def simulate_protocol(protocol_file: Path, design: ExperimentDesign) -> SimResul
                     **{"pass": True}, error=None, log_lines=len(run_log),
                     seconds=round(elapsed, 3), opentrons_version="10.1.0",
                 ),
-                cost=cost,
+                cost=_cost_from_steps(steps, str(protocol_file)),  # B0.5: counted, not formula
                 steps=steps,
                 deck=_deck_slots(),
             )

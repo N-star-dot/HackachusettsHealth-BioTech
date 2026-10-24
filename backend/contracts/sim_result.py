@@ -8,6 +8,8 @@ from __future__ import annotations
 
 from pydantic import BaseModel, Field
 
+from backend.contracts.common import Source
+
 
 class SimulatorInfo(BaseModel):
     passed: bool = Field(..., alias="pass")
@@ -24,6 +26,7 @@ class CostBreakdown(BaseModel):
     compound_uL: float = Field(..., ge=0)
     plates: int = Field(..., ge=0)
     robot_steps: int = Field(..., ge=0)
+    source: "Source | None" = None  # B0.5: simulator (counted) or assumed (formula)
 
 
 class ProtocolStep(BaseModel):
