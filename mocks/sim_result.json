@@ -1,0 +1,7 @@
+{
+  "design_id": "d-001",
+  "protocol_file": "protocols/d-001.py",
+  "simulator": {"pass": true, "error": null, "log_lines": 67, "seconds": 0.14, "opentrons_version": "10.1.0"},
+  "cost": {"tips": 34, "compound_uL": 150, "plates": 1, "robot_steps": 212},
+  "steps": [{"i": 0, "action": "aspirate", "uL": 50, "labware": "plate", "well": "A1"}]
+}

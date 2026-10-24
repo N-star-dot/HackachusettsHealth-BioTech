@@ -1,0 +1,90 @@
+"""ExperimentDesign (stage 2 output).
+
+The Designer LLM writes this as JSON (never code). The compiler and the uncertainty
+engine read it. Every literature claim carries a PubMed id and a verified flag.
+"""
+
+from __future__ import annotations
+
+from pydantic import BaseModel, Field, model_validator
+
+from backend.contracts.common import Source
+
+
+class Assay(BaseModel):
+    type: str = Field(default="dose_response")
+    readout: str = Field(default="percent_activity")
+    target_chembl_id: str
+    compound_chembl_id: str
+
+
+class PriorIC50(BaseModel):
+    """Starting guess from ChEMBL measurements."""
+
+    median_nM: float = Field(..., gt=0)
+    n_measurements: int = Field(..., ge=1)
+    spread_log10: float = Field(..., ge=0, description="Lab-to-lab spread in log10 units.")
+    source: Source
+
+
+class Dilution(BaseModel):
+    top_nM: float = Field(..., gt=0)
+    factor: float = Field(..., gt=1, description="Serial dilution factor, e.g. 3.")
+    points: int = Field(..., ge=2)
+
+    def bottom_nM(self) -> float:
+        return self.top_nM / (self.factor ** (self.points - 1))
+
+    def log10_span_each_side(self, prior_median_nM: float) -> float:
+        """How many log10 units the range covers on each side of the prior median.
+        The Skeptic wants >= 2 log units each side."""
+        import math
+
+        return min(
+            math.log10(self.top_nM / prior_median_nM),
+            math.log10(prior_median_nM / self.bottom_nM()),
+        )
+
+
+class Controls(BaseModel):
+    positive_wells: int = Field(..., ge=0)
+    negative_wells: int = Field(..., ge=0)
+
+
+class Plate(BaseModel):
+    labware: str = "corning_96_wellplate_360ul_flat"
+    layout: str = "randomized"
+
+
+class Volumes(BaseModel):
+    transfer: float = Field(..., gt=0, description="µL transferred per step.")
+    diluent: float = Field(..., gt=0, description="µL diluent per well.")
+
+
+class RationaleItem(BaseModel):
+    claim: str
+    pmid: str
+    verified: bool = False
+
+
+class ExperimentDesign(BaseModel):
+    design_id: str
+    topic_id: str
+    assay: Assay
+    prior_ic50: PriorIC50
+    dilution: Dilution
+    replicates: int = Field(..., ge=1)
+    controls: Controls
+    plate: Plate
+    volumes_uL: Volumes
+    pipette: str = "flex_1channel_1000"
+    tiprack: str = "opentrons_flex_96_tiprack_200ul"
+    rationale: list[RationaleItem] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _warn_small_transfer(self) -> "ExperimentDesign":
+        # Not a hard failure (the Skeptic handles it), but <1µL transfers are the
+        # one regime where robot error rivals biology, so we surface it.
+        if self.volumes_uL.transfer < 1.0:
+            object.__setattr__(self, "_transfer_warning", True)
+        return self

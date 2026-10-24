@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "hackachusetts-health-biotech"
+version = "0.1.0"
+description = "Topic scoring, robot experiment design, and uncertainty estimation for student researchers."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "pydantic>=2.6",
+    "fastapi>=0.110",
+    "uvicorn[standard]>=0.29",
+    "httpx>=0.27",
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "scikit-learn>=1.4",
+    "tenacity>=8.2",
+    "python-dotenv>=1.0",
+]
+
+[project.optional-dependencies]
+# Opentrons is heavy and pins Python <=3.13; keep it optional so the rest of the
+# repo installs on any 3.10+ machine. Install with: pip install -e ".[robot]"
+robot = ["opentrons==10.1.0"]
+dev = ["pytest>=8.0", "ruff>=0.4", "httpx>=0.27"]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["backend*", "pipeline*", "database*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

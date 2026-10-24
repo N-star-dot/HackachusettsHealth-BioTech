@@ -1,0 +1,18 @@
+{
+  "design_id": "d-001",
+  "label": "simulated",
+  "runs": 1000,
+  "seed": 42,
+  "noise": {
+    "lab_spread_log10": 0.68, "pipette_cv": 0.003, "pipette_bias": 0.005, "reader_cv": 0.05,
+    "sources": [
+      {"type": "paper", "id": "doi:10.1371/journal.pone.0061007"},
+      {"type": "spec", "id": "opentrons-flex-pipettes"}
+    ]
+  },
+  "fold_error": {"median": 1.1, "p90": 1.3},
+  "outside_range_share": 0.005,
+  "failed_fit_share": 0.0,
+  "calibration": {"coverage_90": 0.87, "pairs": 412},
+  "next_experiments": [{"change": "add 2 points below 1 nM", "p90_fold_error_drop_pct": 8, "extra_tips": 6, "extra_compound_uL": 0.0, "extra_plates": 0, "score": 1.3}]
+}
