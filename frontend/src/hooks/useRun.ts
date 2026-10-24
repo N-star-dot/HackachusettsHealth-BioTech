@@ -9,10 +9,10 @@ export type RunOrigin = "live" | "recorded" | null;
 const POLL_MS = 500;
 const TERMINAL = new Set(["done", "error"]);
 
-/** Owns the current run (W1.4): fires POST /api/run in async mode and polls
- *  GET /api/run/{id} every 500 ms so each stage reveals as its report lands. Falls back
- *  to a recorded run or a shared run id. Exposes the live pipeline status for the stage
- *  strip. */
+/** Owns the current run (W1.4). Polling is driven by a single effect keyed on `runId`, so
+ *  starting a second run can never leave a stale interval or a dropped poll (the
+ *  "stuck at design on the second topic" bug): changing runId tears down the old poll and
+ *  starts a fresh one. */
 export function useRun() {
   const weights = useUIStore((s) => s.weights);
   const settings = useUIStore((s) => s.settings);
@@ -20,41 +20,47 @@ export function useRun() {
   const [origin, setOrigin] = useState<RunOrigin>(null);
   const [isRunning, setIsRunning] = useState(false);
   const [error, setError] = useState<unknown>(null);
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const activeRunId = useRef<string | null>(null);
+  // The run we are actively polling. null = not polling. A "poll token" (incrementing) is
+  // bumped on every start so even same-id edge cases restart cleanly.
+  const [pollTarget, setPollTarget] = useState<{ runId: string; token: number } | null>(null);
+  const tokenRef = useRef(0);
 
-  const stopPolling = useCallback(() => {
-    if (pollRef.current) { clearInterval(pollRef.current); pollRef.current = null; }
-  }, []);
+  // Single source of truth for polling. Re-runs whenever the poll target changes; its
+  // cleanup clears the interval, so a new run always cancels the previous poll.
+  useEffect(() => {
+    if (!pollTarget) return;
+    const { runId, token } = pollTarget;
+    let stopped = false;
 
-  useEffect(() => stopPolling, [stopPolling]);
-
-  const poll = useCallback((runId: string) => {
-    stopPolling();
     const tick = async () => {
-      if (activeRunId.current !== runId) return;
+      if (stopped || token !== tokenRef.current) return;
       try {
         const rec = await api.get<RunRecord>(`/api/run/${runId}`);
-        if (activeRunId.current !== runId) return;   // a newer run started; drop this
+        if (stopped || token !== tokenRef.current) return;
         setRun(rec);
-        if (TERMINAL.has(rec.meta?.status ?? "")) {
-          stopPolling();
+        const status = rec.meta?.status ?? "";
+        if (TERMINAL.has(status)) {
           setIsRunning(false);
-          if (rec.meta?.status === "error") setError(new Error(rec.meta.error ?? "Run failed"));
+          if (status === "error") setError(new Error(rec.meta?.error ?? "Run failed"));
+          setPollTarget(null); // stop
         }
       } catch (e) {
-        stopPolling();
+        if (stopped || token !== tokenRef.current) return;
         setIsRunning(false);
         setError(e);
+        setPollTarget(null);
       }
     };
-    pollRef.current = setInterval(tick, POLL_MS);
-    tick();   // fire immediately so the first stage can show up fast
-  }, [stopPolling]);
+
+    const id = setInterval(tick, POLL_MS);
+    tick(); // fire immediately so the first stage shows up fast
+    return () => { stopped = true; clearInterval(id); };
+  }, [pollTarget]);
 
   const start = useCallback(
     (query: string) => {
-      stopPolling();
+      const token = ++tokenRef.current;
+      setPollTarget(null);          // stop any current poll immediately
       setRun(null);
       setError(null);
       setIsRunning(true);
@@ -73,45 +79,49 @@ export function useRun() {
           TIMEOUTS.run,
         )
         .then((res) => {
-          activeRunId.current = res.run_id;
-          poll(res.run_id);
+          if (token !== tokenRef.current) return; // a newer run started meanwhile
+          setPollTarget({ runId: res.run_id, token });
         })
         .catch((e) => {
+          if (token !== tokenRef.current) return;
           setIsRunning(false);
           setError(e);
         });
     },
-    [weights, settings, poll, stopPolling],
+    [weights, settings],
   );
 
   const openRecorded = useCallback(async (file: string) => {
-    stopPolling();
-    activeRunId.current = null;
+    ++tokenRef.current;
+    setPollTarget(null);
     const data = await loadRecordedRun(file);
     if (data) { setRun(data); setOrigin("recorded"); setIsRunning(false); }
-  }, [stopPolling]);
+  }, []);
 
   const openRunId = useCallback(async (runId: string) => {
-    stopPolling();
+    const token = ++tokenRef.current;
+    setPollTarget(null);
     try {
       const rec = await api.get<RunRecord>(`/api/run/${runId}`);
-      activeRunId.current = runId;
+      if (token !== tokenRef.current) return;
       setRun(rec);
       setOrigin("live");
-      // a shared run that is still computing resumes polling
-      if (!TERMINAL.has(rec.meta?.status ?? "done")) { setIsRunning(true); poll(runId); }
+      if (!TERMINAL.has(rec.meta?.status ?? "done")) {
+        setIsRunning(true);
+        setPollTarget({ runId, token }); // resume polling a still-computing shared run
+      }
     } catch {
       /* unknown run id — leave the start screen up */
     }
-  }, [stopPolling, poll]);
+  }, []);
 
   const reset = useCallback((value: RunResponse | null) => {
-    stopPolling();
-    activeRunId.current = null;
+    ++tokenRef.current;
+    setPollTarget(null);
     setRun(value);
     setIsRunning(false);
     setError(null);
-  }, [stopPolling]);
+  }, []);
 
   return {
     run,
