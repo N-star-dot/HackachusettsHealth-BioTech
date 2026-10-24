@@ -6,9 +6,77 @@ Kiro: read this whole file before writing code. Section 11 sets up the spec, ste
 
 ## How to start (paste into Kiro, in order)
 
-1. "Read frontend/BRIEF.md completely. Do section 11.1 to 11.4: create the steering file, the MCP config and the hooks, then turn the brief into the dashboard spec (requirements, design, tasks). Don't ask me to approve each phase, show me the three files when done."
-2. "Execute the P0 tasks in order (section 12). After each task, run typecheck and tests. Stop after P0 and give me the URL to look at."
-3. "Run the UI review hook, fix what it finds, then do P1."
+The Kiro setup from section 11 is already on main (commit bb33ae7): steering file, three hooks, and the dashboard spec. Only `.kiro/settings/mcp.json` is missing, because Kiro blocks its own agent from writing MCP config. Create that file by hand with the JSON in 11.4.
+
+1. On branch `new-branch-frontend`: "Merge origin/main into this branch. Read frontend/BRIEF.md completely, starting with 'Read first: build on the existing dashboard'. Update .kiro/specs/dashboard/tasks.md to the revised P0 in that section. Show me the diff of tasks.md."
+2. "Execute the revised P0 tasks in order. After each task, run typecheck and tests. Stop after P0 and give me the URL to look at."
+3. "Run the UI review flow from section 11.3 with the Playwright MCP, fix what it finds, then do P1."
+
+## Read first: build on the existing dashboard (added 3:05 PM)
+
+A teammate already built a working dashboard on branch `new-branch-frontend`: commits d0b0b45 ("Add React + Vite research dashboard (stage 5)") and d2844b5 ("extract hooks and split components"), React 18.3, Vite 5.4, TypeScript 5.6, about 4,200 lines. Build on it. Do not re-scaffold. This section overrides section 2, section 10 and tasks P0-1 to P0-9 wherever they disagree. Everything else in the brief applies to the existing code.
+
+Setup on `new-branch-frontend`:
+1. `git merge origin/main`. It should be conflict-free. Since the shared base (a86a5f0), main changed backend code, `.kiro/` and added `frontend/BRIEF.md`, while the branch changed only `frontend/` files that main never touched.
+2. Keep React 18.3, Vite 5.4 and TypeScript 5.6. Do not upgrade during the hackathon.
+3. Add only these packages (versions checked on npm on 2026-10-24, all accept React 18):
+
+| Package | Version | Note |
+|---|---|---|
+| motion | 14.6.0 | import from `motion/react`, peer React 18 or 19 |
+| @radix-ui/react-popover | 1.3.1 | |
+| @radix-ui/react-slider | 1.6.1 | |
+| @fontsource-variable/archivo | 5.3.0 | `wdth.css` |
+| @fontsource-variable/newsreader | 5.3.0 | `opsz.css` |
+| d3-scale, d3-shape, d3-array, d3-interpolate | 4.0.2, 3.2.0, 3.2.4, 3.0.1 | with @types/d3-scale 4.0.9, @types/d3-shape 3.2.0, @types/d3-array 3.2.2, @types/d3-interpolate 3.0.4 |
+| vitest (dev) | 3.2.7 | not 5.x, which needs Vite 6.4 or newer. Run the `src/lib` tests in the Node environment, no jsdom needed |
+| fast-check (dev) | 4.10.2 | property tests (Appendix B) |
+| @playwright/test (dev) | 1.64.1 | e2e, including the provenance check in 5.15 |
+
+Skip React Query, zustand and zod. The existing hooks (`useRun`, `useWhatIf`, `useReplay`, `useDataMode`) already hold the state. Add a `test` script (`vitest run`) and keep the existing `typecheck` script (`tsc --noEmit`). The provenance test from 5.15 runs in Playwright instead of vitest.
+
+Where each brief section lands in the existing code:
+
+| Brief | Existing file | Change |
+|---|---|---|
+| 5.1 top bar, question | TopBar.tsx, QueryForm.tsx | brand becomes Lab Planner, add server status, history, share, settings, examples, start screen |
+| 5.2 progress, reveal | App.tsx, hooks/useRun.ts | stage strip and reveal |
+| 5.4 topic | TopicPanel.tsx | |
+| 5.6 matrix | ViabilityMatrix.tsx, sources.ts | fix A, contribution bar |
+| 5.7 design | new components | |
+| 5.8 review | SidePanels.tsx (`Evidence`) | becomes the review thread, fix C |
+| 5.9 robot check | SidePanels.tsx (`RunCost`) | |
+| 5.10 bench | RunReplay.tsx, hooks/useReplay.ts | deck drawing, fix B |
+| 5.11 uncertainty | WhatIf.tsx shows the report today | own section in the notebook |
+| 5.12 lab controls | WhatIf.tsx, hooks/useWhatIf.ts | move onto the bench, fix D |
+| 5.15 provenance | Sourced.tsx, format.ts, sources.ts | `Sourced` is the brief's `<Num>`. Add the kinds and the link table |
+| Appendix A types | types.ts | add the fields listed there |
+| 3.4 client rules | api.ts, hooks/useDataMode.ts | add normalize.ts and capabilities.ts, fix E |
+
+Fix these in the existing code first. Each one breaks a rule in section 0:
+- A. `sources.ts` `axisProvenance` cites the OpenAlex topic (and the simulator) as the source of novelty, evidence, automatable and cost_time. The backend sets those four to constants today (0.55, 0.40, 1.0, 0.62), so the popover credits a source that did not produce them. Label them "Assumed value" until `matrix.axis_sources` arrives.
+- B. `useReplay.ts` builds `demoSteps` from the design when the simulator sends fewer than 2 steps. Remove it and replay only real simulator steps. The real backend currently sends 142 steps that carry only a first-word action and no well, so the existing replay fills nothing. Disable Play with the 5.10 reason until steps carry `text` and `well` (backend item B0.4).
+- C. `types.ts` `RationaleItem` has only `claim, pmid, verified`. The backend now also sends `evidence_type, evidence_id, quote, model_note, status, reason` (Appendix A). Badges come from `status`, `model_note` shows as "Model's note, not verified", and `chembl_activity` items link by `evidence_id` because their `pmid` is empty.
+- D. `WhatIf.tsx` changes `dilution.factor` without touching `volumes_uL.diluent`. The backend's Monte Carlo uses the factor and the robot protocol uses the volumes, so they would simulate two different experiments. Apply B.8 (diluent = transfer x (factor - 1)) on every change.
+- E. The app starts in mock mode, which shows `mocks/*.json`, and `mocks/README.md` calls those "placeholders, not results". Start in live mode, fall back to recorded runs (3.6), and keep mocks as a developer option labeled "Sample data from mocks/, not results".
+- F. The default question "kinase inhibitors for liver fibrosis" matches none of the three prepared pairs. Start with an empty field and the three examples.
+- G. Styling: replace the tokens at the top of `styles.css` with section 6. Drop IBM Plex Sans and IBM Plex Mono for Archivo and Newsreader. Remove the numbered middle-dot eyebrows ("01 · Topic viability", "03 · Protocol", "04 · Evidence"), monospace on numbers, and the identical 12 px white cards. All three are on the steering file's Banned list.
+
+Revised P0 for this branch (replaces P0-1 to P0-9 in section 12, P1 and P2 stay as written):
+
+| ID | Task | Done when |
+|---|---|---|
+| P0-1 | Merge main, add packages, swap tokens and fonts, fix F and G, two-column notebook and bench layout from section 4 | start screen and workspace match section 4 at 1440 and 390 px |
+| P0-2 | normalize.ts, capabilities.ts, server status and banners, recorded runs and the record-demo script, fix E | a recorded run renders with the backend off |
+| P0-3 | Extend `Sourced` to 5.15, fix A | the Playwright provenance check passes |
+| P0-4 | Topic and matrix to 5.4 and 5.6 | weights recompute instantly and match the server total |
+| P0-5 | Design block (5.7) | the plate map shows the planned layout |
+| P0-6 | Review thread (5.8), fix C | the unverified fixture shows the flag and reason |
+| P0-7 | Robot check (5.9) and the uncertainty section (5.11) | every number has provenance |
+| P0-8 | Lab controls on the bench (5.12), fix D | the 5.12 acceptance passes |
+| P0-9 | Bench deck (5.10), fix B | the deck renders, and Play is disabled with its reason until steps are structured |
+
+At the 4:00 PM freeze, merge `new-branch-frontend` into main. The submission and the `hackachusetts-final` tag come from main.
 
 ## 0. Rules that override everything else
 

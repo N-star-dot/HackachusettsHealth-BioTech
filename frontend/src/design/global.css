@@ -1,0 +1,37 @@
+@import "./tokens.css";
+
+* { box-sizing: border-box; }
+
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: var(--bench);
+  color: var(--ink);
+  font-family: "Archivo Variable", system-ui, sans-serif;
+  font-size: 16px;
+  line-height: 24px;
+  font-variant-numeric: tabular-nums lining-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* All numbers use tabular lining figures. */
+.num { font-variant-numeric: tabular-nums lining-nums; }
+
+/* Visible focus everywhere (2px ink outline, 2px offset). */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+a { color: var(--ink); }
+
+h1, h2, h3, p { margin: 0; }
+
+button {
+  font-family: inherit;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: 0.001ms !important; transition-duration: 150ms !important; }
+}

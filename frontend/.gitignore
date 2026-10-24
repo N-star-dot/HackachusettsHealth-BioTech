@@ -1,0 +1,6 @@
+node_modules/
+dist/
+.vite/
+.env.local
+*.tsbuildinfo
+# screenshots/ is committed — the Kiro write-up uses it.

@@ -1,0 +1,34 @@
+.bench { display: flex; flex-direction: column; gap: var(--space-3); }
+
+.deck {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--deck);
+  border-radius: var(--radius-deck);
+  border-top: 1px solid rgba(255, 255, 255, 0.5);
+  border-left: 1px solid rgba(255, 255, 255, 0.5);
+  border-right: 1px solid rgba(0, 0, 0, 0.08);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.slot {
+  aspect-ratio: 128 / 85;
+  background: var(--slot);
+  border-radius: var(--radius-input);
+  position: relative;
+}
+
+.slotLabel {
+  position: absolute;
+  top: 3px;
+  left: 4px;
+  font-size: 12px;
+  line-height: 16px;
+  font-stretch: 75%;
+  font-weight: 500;
+  color: var(--graphite);
+}
+
+.caption { color: var(--graphite); font-size: 14px; line-height: 20px; }
